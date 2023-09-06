@@ -7,6 +7,7 @@ char str[10][1000];
 
 void print_str();
 void count_word();
+
 int main()
 {
 	ifstream rf;
@@ -16,6 +17,7 @@ int main()
 		rf.getline(str[i], 1000);
 	print_str();
 	count_word();
+	rf.close();
 	return 0;
 }
 
