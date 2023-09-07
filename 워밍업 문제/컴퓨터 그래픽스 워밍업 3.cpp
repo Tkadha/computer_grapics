@@ -231,8 +231,8 @@ void change(char a, char b) {
 				str[i][j] = b;
 			}
 		}
-		print_str();
 	}
+	print_str();
 }
 void same() {
 	int count[20];
@@ -297,7 +297,7 @@ void num_PM(int c)
 			}
 		}
 	}
-	else if (c == 1) {	// 숫자 -1			만드는중
+	else if (c == 1) {	// 숫자 -1			
 		for (int i = 0; i < str_count; i++)
 		{
 			len = strlen(str[i]);
