@@ -301,19 +301,77 @@ void num_PM(int c)
 		for (int i = 0; i < str_count; i++)
 		{
 			len = strlen(str[i]);
-			for (int j = 0; j < len; j++) {
-				if ((str[i][j] >= '1') && (str[i][j] <= '9')) {
-					if ((str[i][j - 1] < '1') || (str[i][j - 1]) > '9') {	//이전이 숫자가 아니면
+			for (int j = len-1; j >= 0; j--) {
+				if ((str[i][j] >= '1') && (str[i][j] <= '9')) {	
+					if ((str[i][j + 1] < '0') || (str[i][j + 1] > '9')) {
 						str[i][j] -= 1;
 					}
 				}
 				else if (str[i][j] == '0') {
-					if ((str[i][j - 1] >= '2') && (str[i][j - 1]) <= '9') {	//2자리수 라면
-						str[i][j - 1] -= 1;
-						str[i][j] = '9';
-					}
-					else if (str[i][j - 1] == '1') {
-						str[i][j - 1] == '9';
+					if ((str[i][j + 1] < '0') || (str[i][j + 1] > '9')) {
+						if ((str[i][j - 1] >= '2') && (str[i][j - 1] <= '9')) {
+							str[i][j - 1] -= 1;
+							str[i][j] = '9';
+							j--;
+						}						
+						else if (str[i][j - 1] == '0') {
+							if ((str[i][j - 2] >= '2') && (str[i][j - 2] <= '9')) {
+								str[i][j - 2] -= 1;
+								str[i][j - 1] = '9';
+								str[i][j] = '9';
+								j -= 2;
+							}
+							else if (str[i][j - 2] == '0') {
+								if ((str[i][j - 3] >= '2') && (str[i][j - 3] <= '9')) {
+									str[i][j - 3] -= 1;
+									str[i][j - 2] = '9';
+									str[i][j - 1] = '9';
+									str[i][j] = '9';
+									j -= 3;
+								}
+								else if (str[i][j - 3] == '1') {
+									if ((str[i][j - 4] < '0') || (str[i][j - 4] > '9')) {
+										str[i][j - 2] = '9';
+										str[i][j - 1] = '9';
+										str[i][j] = '9';
+										for (int k = j - 3; k < len; k++) {
+											str[i][k] = str[i][k + 1];
+											str[i][len] = NULL;
+											len--;
+										}
+										j -= 3;
+									}
+								}
+							}
+							else if (str[i][j - 2] == '1') {
+								if ((str[i][j - 3] < '0') || (str[i][j - 3] > '9')) {
+									str[i][j - 1] = '9';
+									str[i][j] = '9';
+									for (int k = j - 2; k < len; k++) {
+										str[i][k] = str[i][k + 1];
+										str[i][len] = NULL;
+										len--;
+									}
+									j -= 2;
+								}
+							}
+						}
+						else if (str[i][j - 1] == '1') {
+							if ((str[i][j - 2] < '0') || (str[i][j - 2] > '9')) {	
+								str[i][j] = '9';
+								for (int k = j - 1; k < len; k++) {
+									str[i][k] = str[i][k + 1];
+									len--;
+									str[i][len] = NULL;
+								}
+								j--;
+							}
+							else if ((str[i][j - 2] >= '0') && (str[i][j - 2] <= '9')) {
+								str[i][j - 1] -= 1;
+								str[i][j] = '9';
+								j--;
+							}
+						}
 					}
 				}
 			}
