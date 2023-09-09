@@ -181,7 +181,7 @@ void movex(int a) {
 
 	if (a == 0) {		// 우측 x
 		if (point1_x > point2_x) {
-			if (board[halfy][halfx] != false) {
+			if (board[halfy][halfx] != 0) {
 				if (point1_x < BoardX - 1) {
 					for (int i = point1_x + 1; i >= point2_x; i--) {
 						if (point1_y < point2_y) {
@@ -201,42 +201,42 @@ void movex(int a) {
 				else if (point1_x == BoardX - 1) {
 					if (point1_y < point2_y) {
 						for (int j = point1_y; j <= point2_y; j++) {
-							board[j][point2_x] = false;
+							board[j][point2_x] = 0;
 						}
 					}
 					else {
 						for (int j = point2_y; j <= point1_y; j++) {
-							board[j][point2_x] = false;
+							board[j][point2_x] = 0;
 						}
 					}
 					point2_x++;
 					point1_x = 0;
 					if (point1_y < point2_y) {
 						for (int j = point1_y; j <= point2_y; j++) {
-							board[j][point1_x] = true;
+							board[j][point1_x] = 1;
 						}
 					}
 					else {
 						for (int j = point2_y; j <= point1_y; j++) {
-							board[j][point1_x] = true;
+							board[j][point1_x] = 1;
 						}
 					}
 				}
 			}
 			else {
-				if (board[halfy][point1_x] != false)
+				if (board[halfy][point1_x] != 0)
 				{
 					if (point1_x < BoardX - 1) {
 						if (point1_y < point2_y) {
 							for (int j = point1_y; j <= point2_y; j++) {
-								board[j][point1_x] = false;
-								board[j][point2_x + 1] = true;
+								board[j][point1_x] = 0;
+								board[j][point2_x + 1] = 1;
 							}
 						}
 						else {
 							for (int j = point2_y; j <= point1_y; j++) {
-								board[j][point1_x] = false;
-								board[j][point2_x + 1] = true;
+								board[j][point1_x] = 0;
+								board[j][point2_x + 1] = 1;
 							}
 						}
 						point1_x++;
@@ -245,14 +245,14 @@ void movex(int a) {
 					else if (point1_x == BoardX - 1) {
 						if (point1_y < point2_y) {
 							for (int j = point1_y; j <= point2_y; j++) {
-								board[j][point1_x] = false;
-								board[j][point2_x + 1] = true;
+								board[j][point1_x] = 0;
+								board[j][point2_x + 1] = 1;
 							}
 						}
 						else {
 							for (int j = point2_y; j <= point1_y; j++) {
-								board[j][point1_x] = false;
-								board[j][point2_x + 1] = true;
+								board[j][point1_x] = 0;
+								board[j][point2_x + 1] = 1;
 							}
 						}
 						point1_x = 0;
@@ -264,23 +264,23 @@ void movex(int a) {
 					if (point1_x < BoardX - 1) {
 						if (point1_y < point2_y) {
 							for (int i = 0; i <= point1_y; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x + 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x + 1] = 1;
 							}
 							for (int i = point2_y; i <= BoardY - 1; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x + 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x + 1] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_y; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x + 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x + 1] = 1;
 							}
 							for (int i = point1_y; i <= BoardY - 1; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x + 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x + 1] = 1;
 							}
 						}
 						point2_x++;
@@ -290,23 +290,23 @@ void movex(int a) {
 						point1_x = 0;
 						if (point1_y < point2_y) {
 							for (int i = 0; i <= point1_y; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x] = 1;
 							}
 							for (int i = point2_y; i <= BoardY - 1; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_y; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x] = 1;
 							}
 							for (int i = point1_y; i <= BoardY - 1; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x] = 1;
 							}
 						}
 						point2_x++;
@@ -315,7 +315,7 @@ void movex(int a) {
 			}
 		}
 		else if (point1_x < point2_x) {
-			if (board[halfy][halfx] != false) {
+			if (board[halfy][halfx] != 0) {
 				if (point2_x < BoardX - 1) {
 					for (int i = point2_x + 1; i >= point1_x; i--) {
 						if (point1_y < point2_y) {
@@ -335,42 +335,42 @@ void movex(int a) {
 				else if (point2_x == BoardX - 1) {
 					if (point1_y < point2_y) {
 						for (int j = point1_y; j <= point2_y; j++) {
-							board[j][point1_x] = false;
+							board[j][point1_x] = 0;
 						}
 					}
 					else {
 						for (int j = point2_y; j <= point1_y; j++) {
-							board[j][point1_x] = false;
+							board[j][point1_x] = 0;
 						}
 					}
 					point1_x++;
 					point2_x = 0;
 					if (point1_y < point2_y) {
 						for (int j = point1_y; j <= point2_y; j++) {
-							board[j][point2_x] = true;
+							board[j][point2_x] = 1;
 						}
 					}
 					else {
 						for (int j = point2_y; j <= point1_y; j++) {
-							board[j][point2_x] = true;
+							board[j][point2_x] = 1;
 						}
 					}
 				}
 			}
 			else {
-				if (board[halfy][point1_x] != false)
+				if (board[halfy][point1_x] != 0)
 				{
 					if (point2_x < BoardX - 1) {
 						if (point1_y < point2_y) {
 							for (int j = point1_y; j <= point2_y; j++) {
-								board[j][point1_x] = false;
-								board[j][point2_x + 1] = true;
+								board[j][point1_x] = 0;
+								board[j][point2_x + 1] = 1;
 							}
 						}
 						else {
 							for (int j = point2_y; j <= point1_y; j++) {
-								board[j][point1_x] = false;
-								board[j][point2_x + 1] = true;
+								board[j][point1_x] = 0;
+								board[j][point2_x + 1] = 1;
 							}
 						}
 						point2_x++;
@@ -380,14 +380,14 @@ void movex(int a) {
 						point2_x = 0;
 						if (point1_y < point2_y) {
 							for (int j = point1_y; j <= point2_y; j++) {
-								board[j][point1_x] = false;
-								board[j][point2_x] = true;
+								board[j][point1_x] = 0;
+								board[j][point2_x] = 1;
 							}
 						}
 						else {
 							for (int j = point2_y; j <= point1_y; j++) {
-								board[j][point1_x] = false;
-								board[j][point2_x] = true;
+								board[j][point1_x] = 0;
+								board[j][point2_x] = 1;
 							}
 						}
 						point1_x++;
@@ -398,23 +398,23 @@ void movex(int a) {
 					if (point2_x < BoardX - 1) {
 						if (point1_y < point2_y) {
 							for (int i = 0; i <= point1_y; i++) {
-								board[i][point1_x] = false;
-								board[i][point2_x + 1] = true;
+								board[i][point1_x] = 0;
+								board[i][point2_x + 1] = 1;
 							}
 							for (int i = point2_y; i <= BoardY - 1; i++) {
-								board[i][point1_x] = false;
-								board[i][point2_x + 1] = true;
+								board[i][point1_x] = 0;
+								board[i][point2_x + 1] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_y; i++) {
-								board[i][point1_x] = false;
-								board[i][point2_x + 1] = true;
+								board[i][point1_x] = 0;
+								board[i][point2_x + 1] = 1;
 							}
 							for (int i = point1_y; i <= BoardY - 1; i++) {
-								board[i][point1_x] = false;
-								board[i][point2_x + 1] = true;
+								board[i][point1_x] = 0;
+								board[i][point2_x + 1] = 1;
 							}
 						}
 						point2_x++;
@@ -424,23 +424,23 @@ void movex(int a) {
 						point2_x = 0;
 						if (point1_y < point2_y) {
 							for (int i = 0; i <= point1_y; i++) {
-								board[i][point1_x] = false;
-								board[i][point2_x] = true;
+								board[i][point1_x] = 0;
+								board[i][point2_x] = 1;
 							}
 							for (int i = point2_y; i <= BoardY - 1; i++) {
-								board[i][point1_x] = false;
-								board[i][point2_x] = true;
+								board[i][point1_x] = 0;
+								board[i][point2_x] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_y; i++) {
-								board[i][point1_x] = false;
-								board[i][point2_x] = true;
+								board[i][point1_x] = 0;
+								board[i][point2_x] = 1;
 							}
 							for (int i = point1_y; i <= BoardY - 1; i++) {
-								board[i][point1_x] = false;
-								board[i][point2_x] = true;
+								board[i][point1_x] = 0;
+								board[i][point2_x] = 1;
 							}
 						}
 						point1_x++;
@@ -469,24 +469,24 @@ void movex(int a) {
 			else if (point2_x == BoardX - 1) {
 				if (point1_y < point2_y) {
 					for (int j = point1_y; j <= point2_y; j++) {
-						board[j][point1_x] = false;
+						board[j][point1_x] = 0;
 					}
 				}
 				else {
 					for (int j = point2_y; j <= point1_y; j++) {
-						board[j][point1_x] = false;
+						board[j][point1_x] = 0;
 					}
 				}
 				point1_x = 0;
 				point2_x = 0;
 				if (point1_y < point2_y) {
 					for (int j = point1_y; j <= point2_y; j++) {
-						board[j][point2_x] = true;
+						board[j][point2_x] = 1;
 					}
 				}
 				else {
 					for (int j = point2_y; j <= point1_y; j++) {
-						board[j][point2_x] = true;
+						board[j][point2_x] = 1;
 					}
 				}
 			}
@@ -494,7 +494,7 @@ void movex(int a) {
 	}
 	else {				// 좌측	X
 		if (point1_x > point2_x) {
-			if (board[halfy][halfx] != false) {
+			if (board[halfy][halfx] != 0) {
 				if (point2_x > 0) {
 					for (int i = point2_x; i <= point1_x + 1; i++) {
 						if (point1_y < point2_y) {
@@ -514,43 +514,43 @@ void movex(int a) {
 				else if (point2_x == 0) {
 					if (point1_y < point2_y) {
 						for (int j = point1_y; j <= point2_y; j++) {
-							board[j][point1_x] = false;
+							board[j][point1_x] = 0;
 						}
 					}
 					else {
 						for (int j = point2_y; j <= point1_y; j++) {
-							board[j][point1_x] = false;
+							board[j][point1_x] = 0;
 						}
 					}
 					point1_x--;
 					point2_x = BoardX - 1;
 					if (point1_y < point2_y) {
 						for (int j = point1_y; j <= point2_y; j++) {
-							board[j][point2_x] = true;
+							board[j][point2_x] = 1;
 						}
 					}
 					else {
 						for (int j = point2_y; j <= point1_y; j++) {
-							board[j][point2_x] = true;
+							board[j][point2_x] = 1;
 						}
 					}
 				}
 			}
 			else {
-				if (board[halfy][point1_x] != false)
+				if (board[halfy][point1_x] != 0)
 				{
 					if (point2_x > 0) {
 						if (point1_y < point2_y) {
 							for (int i = point1_y; i <= point2_y; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x - 1] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_y; i <= point1_y; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x - 1] = 1;
 							}
 						}
 						point2_x--;
@@ -559,15 +559,15 @@ void movex(int a) {
 					else if (point2_x == 0) {
 						if (point1_y < point2_y) {
 							for (int i = point1_y; i <= point2_y; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x - 1] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_y; i <= point1_y; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x - 1] = 1;
 							}
 						}
 						point2_x = BoardX - 1;
@@ -577,7 +577,7 @@ void movex(int a) {
 			}
 		}
 		else if (point1_x < point2_x) {
-			if (board[halfy][halfx] != false) {
+			if (board[halfy][halfx] != 0) {
 				if (point1_x > 0) {
 					for (int i = point1_x ; i <= point2_x+1; i++) {
 						if (point1_y < point2_y) {
@@ -597,43 +597,43 @@ void movex(int a) {
 				else if (point1_x == 0) {
 					if (point1_y < point2_y) {
 						for (int j = point1_y; j <= point2_y; j++) {
-							board[j][point2_x] = false;
+							board[j][point2_x] = 0;
 						}
 					}
 					else {
 						for (int j = point2_y; j <= point1_y; j++) {
-							board[j][point2_x] = false;
+							board[j][point2_x] = 0;
 						}
 					}
 					point2_x--;
 					point1_x = BoardX - 1;
 					if (point1_y < point2_y) {
 						for (int j = point1_y; j <= point2_y; j++) {
-							board[j][point1_x] = true;
+							board[j][point1_x] = 1;
 						}
 					}
 					else {
 						for (int j = point2_y; j <= point1_y; j++) {
-							board[j][point1_x] = true;
+							board[j][point1_x] = 1;
 						}
 					}
 				}
 			}
 			else {
-				if (board[halfy][point1_x] != false)
+				if (board[halfy][point1_x] != 0)
 				{
 					if (point1_x > 0) {
 						if (point1_y < point2_y) {
 							for (int i = point1_y; i <= point2_y; i++) {
-								board[i][point1_x] = false;
-								board[i][point2_x - 1] = true;
+								board[i][point1_x] = 0;
+								board[i][point2_x - 1] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_y; i <= point1_y; i++) {
-								board[i][point1_x] = false;
-								board[i][point2_x - 1] = true;
+								board[i][point1_x] = 0;
+								board[i][point2_x - 1] = 1;
 							}
 						}
 						point2_x--;
@@ -642,15 +642,15 @@ void movex(int a) {
 					else if (point1_x == 0) {
 						if (point1_y < point2_y) {
 							for (int i = point1_y; i <= point2_y; i++) {
-								board[i][point2_x] = false;
-								board[i][BoardX - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][BoardX - 1] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_y; i <= point1_y; i++) {
-								board[i][point2_x] = false;
-								board[i][BoardX - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][BoardX - 1] = 1;
 							}
 						}
 						point1_x = BoardX - 1;
@@ -662,23 +662,23 @@ void movex(int a) {
 					if (point1_x > 0) {
 						if (point1_y < point2_y) {
 							for (int i = 0; i <= point1_y; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x - 1] = 1;
 							}
 							for (int i = point2_y; i <= BoardY - 1; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x - 1] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_y; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x - 1] = 1;
 							}
 							for (int i = point1_y; i <= BoardY - 1; i++) {
-								board[i][point2_x] = false;
-								board[i][point1_x - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][point1_x - 1] = 1;
 							}
 						}
 						point2_x--;
@@ -688,23 +688,23 @@ void movex(int a) {
 					{
 						if (point1_y < point2_y) {
 							for (int i = 0; i <= point1_y; i++) {
-								board[i][point2_x] = false;
-								board[i][BoardX - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][BoardX - 1] = 1;
 							}
 							for (int i = point2_y; i <= BoardY - 1; i++) {
-								board[i][point2_x] = false;
-								board[i][BoardX - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][BoardX - 1] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_y; i++) {
-								board[i][point2_x] = false;
-								board[i][BoardX - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][BoardX - 1] = 1;
 							}
 							for (int i = point1_y; i <= BoardY - 1; i++) {
-								board[i][point2_x] = false;
-								board[i][BoardX - 1] = true;
+								board[i][point2_x] = 0;
+								board[i][BoardX - 1] = 1;
 							}
 						}
 						point1_x = BoardX - 1;
@@ -734,24 +734,24 @@ void movex(int a) {
 			else if (point2_x == 0) {
 				if (point1_y < point2_y) {
 					for (int j = point1_y; j <= point2_y; j++) {
-						board[j][point1_x] = false;
+						board[j][point1_x] = 0;
 					}
 				}
 				else {
 					for (int j = point2_y; j <= point1_y; j++) {
-						board[j][point1_x] = false;
+						board[j][point1_x] = 0;
 					}
 				}
 				point1_x = BoardX-1;
 				point2_x = BoardX-1;
 				if (point1_y < point2_y) {
 					for (int j = point1_y; j <= point2_y; j++) {
-						board[j][point2_x] = true;
+						board[j][point2_x] = 1;
 					}
 				}
 				else {
 					for (int j = point2_y; j <= point1_y; j++) {
-						board[j][point2_x] = true;
+						board[j][point2_x] = 1;
 					}
 				}
 			}
@@ -763,7 +763,7 @@ void movey(int a) {
 	halfy = (point1_y + point2_y) / 2;
 	if (a == 0) {		// 아래 y
 		if (point1_y > point2_y) {
-			if (board[halfy][halfx] != false) {
+			if (board[halfy][halfx] != 0) {
 				if (point1_y < BoardY - 1) {
 					for (int i = point1_y + 1; i >= point2_y; i--) {
 						if (point1_x < point2_x) {
@@ -795,44 +795,44 @@ void movey(int a) {
 				else if (point1_y == BoardY - 1) {
 					if (point1_x < point2_x) {
 						for (int j = point1_x; j <= point2_x; j++) {
-							board[point2_y][j] = false;
+							board[point2_y][j] = 0;
 						}
 					}
 					else {
 						for (int j = point2_x; j <= point1_x; j++) {
-							board[point2_y][j] = false;
+							board[point2_y][j] = 0;
 						}
 					}
 					point2_y++;
 					point1_y = 0;
 					if (point1_x < point2_x) {
 						for (int j = point1_x; j <= point2_x; j++) {
-							board[point1_y][j] = true;
+							board[point1_y][j] = 1;
 						}
 					}
 					else {
 						for (int j = point2_x; j <= point1_x; j++) {
-							board[point1_y][j] = true;
+							board[point1_y][j] = 1;
 						}
 					}
 				}
 			}
 			else
 			{
-				if (board[point2_y][halfx] != false)
+				if (board[point2_y][halfx] != 0)
 				{
 					if (point1_y < BoardY - 1) {
 						if (point1_x < point2_x) {
 							for (int i = point1_x; i <= point2_x; i++) {
-								board[point1_y][i] = false;
-								board[point2_y + 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y + 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_x; i <= point1_x; i++) {
-								board[point1_y][i] = false;
-								board[point2_y + 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y + 1][i] = 1;
 							}
 						}
 						point2_y++;
@@ -841,15 +841,15 @@ void movey(int a) {
 					else if (point1_y == BoardY - 1) {
 						if (point1_x < point2_x) {
 							for (int i = point1_x; i <= point2_x; i++) {
-								board[point2_y + 1][i] = true;
-								board[point1_y][i] = false;
+								board[point2_y + 1][i] = 1;
+								board[point1_y][i] = 0;
 							}
 						}
 						else
 						{
 							for (int i = point2_x; i <= point1_x; i++) {
-								board[point2_y + 1][i] = true;
-								board[point1_y][i] = false;
+								board[point2_y + 1][i] = 1;
+								board[point1_y][i] = 0;
 							}
 						}
 						point1_y = 0;
@@ -862,26 +862,26 @@ void movey(int a) {
 						if (point1_x < point2_x) {
 							for (int i = 0; i <= point1_x; i++)
 							{
-								board[point2_y][i] = false;
-								board[point1_y + 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y + 1][i] = 1;
 							}
 							for (int i = point2_x; i <= BoardX - 1; i++)
 							{
-								board[point2_y][i] = false;
-								board[point1_y + 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y + 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_x; i++)
 							{
-								board[point2_y][i] = false;
-								board[point1_y + 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y + 1][i] = 1;
 							}
 							for (int i = point1_x; i <= BoardX - 1; i++)
 							{
-								board[point2_y][i] = false;
-								board[point1_y + 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y + 1][i] = 1;
 							}
 						}
 						point2_y++;
@@ -891,25 +891,25 @@ void movey(int a) {
 						if (point1_x < point2_x) {
 							for (int i = 0; i <= point1_x; i++)
 							{
-								board[point2_y][i] = false;
-								board[0][i] = true;
+								board[point2_y][i] = 0;
+								board[0][i] = 1;
 							}
 							for (int i = point2_x; i <= BoardX - 1; i++)
 							{
-								board[point2_y][i] = false;
-								board[0][i] = true;
+								board[point2_y][i] = 0;
+								board[0][i] = 1;
 							}
 						}
 						else {
 							for (int i = 0; i <= point2_x; i++)
 							{
-								board[point2_y][i] = false;
-								board[0][i] = true;
+								board[point2_y][i] = 0;
+								board[0][i] = 1;
 							}
 							for (int i = point1_x; i <= BoardX - 1; i++)
 							{
-								board[point2_y][i] = false;
-								board[0][i] = true;
+								board[point2_y][i] = 0;
+								board[0][i] = 1;
 							}
 						}
 						point1_y = 0;
@@ -919,7 +919,7 @@ void movey(int a) {
 			}
 		}
 		else if (point1_y < point2_y) {
-			if (board[halfy][halfx] != false) {
+			if (board[halfy][halfx] != 0) {
 				if (point2_y < BoardY - 1) {
 					for (int i = point2_y + 1; i >= point1_y; i--) {
 						if (point1_x < point2_x) {
@@ -951,44 +951,44 @@ void movey(int a) {
 				else if (point2_y == BoardY - 1) {
 					if (point1_x < point2_x) {
 						for (int j = point1_x; j <= point2_x; j++) {
-							board[point1_y][j] = false;
+							board[point1_y][j] = 0;
 						}
 					}
 					else {
 						for (int j = point2_x; j <= point1_x; j++) {
-							board[point1_y][j] = false;
+							board[point1_y][j] = 0;
 						}
 					}
 					point1_y++;
 					point2_y = 0;
 					if (point1_x < point2_x) {
 						for (int j = point1_x; j <= point2_x; j++) {
-							board[point2_y][j] = true;
+							board[point2_y][j] = 1;
 						}
 					}
 					else {
 						for (int j = point2_x; j <= point1_x; j++) {
-							board[point2_y][j] = true;
+							board[point2_y][j] = 1;
 						}
 					}
 				}
 			}
 			else
 			{
-				if (board[point1_y][halfx] != false) 
+				if (board[point1_y][halfx] != 0) 
 				{
 					if (point2_y < BoardY - 1) {
 						if (point1_x < point2_x) {
 							for (int i = point1_x; i <= point2_x; i++) {
-								board[point1_y][i] = false;
-								board[point2_y + 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y + 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_x; i <= point1_x; i++) {
-								board[point1_y][i] = false;
-								board[point2_y + 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y + 1][i] = 1;
 							}
 						}
 						point2_y++;
@@ -997,15 +997,15 @@ void movey(int a) {
 					else if (point2_y == BoardY - 1) {
 						if (point1_x < point2_x) {
 							for (int i = point1_x; i <= point2_x; i++) {
-								board[point1_y][i] = false;
-								board[0][i] = true;
+								board[point1_y][i] = 0;
+								board[0][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_x; i <= point1_x; i++) {
-								board[point1_y][i] = false;
-								board[0][i] = true;
+								board[point1_y][i] = 0;
+								board[0][i] = 1;
 							}
 						}
 						point2_y = 0;
@@ -1018,26 +1018,26 @@ void movey(int a) {
 						if (point1_x < point2_x) {
 							for (int i = 0; i <= point1_x; i++)
 							{
-								board[point1_y][i] = false;
-								board[point2_y + 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y + 1][i] = 1;
 							}
 							for (int i = point2_x; i <= BoardX - 1; i++)
 							{
-								board[point1_y][i] = false;
-								board[point2_y + 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y + 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_x; i++)
 							{
-								board[point1_y][i] = false;
-								board[point2_y + 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y + 1][i] = 1;
 							}
 							for (int i = point1_x; i <= BoardX - 1; i++)
 							{
-								board[point1_y][i] = false;
-								board[point2_y + 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y + 1][i] = 1;
 							}
 						}
 						point2_y++;
@@ -1047,25 +1047,25 @@ void movey(int a) {
 						if (point1_x < point2_x) {
 							for (int i = 0; i <= point1_x; i++)
 							{
-								board[point1_y][i] = false;
-								board[0][i] = true;
+								board[point1_y][i] = 0;
+								board[0][i] = 1;
 							}
 							for (int i = point2_x; i <= BoardX - 1; i++)
 							{
-								board[point1_y][i] = false;
-								board[0][i] = true;
+								board[point1_y][i] = 0;
+								board[0][i] = 1;
 							}
 						}
 						else {
 							for (int i = 0; i <= point2_x; i++)
 							{
-								board[point1_y][i] = false;
-								board[0][i] = true;
+								board[point1_y][i] = 0;
+								board[0][i] = 1;
 							}
 							for (int i = point1_x; i <= BoardX - 1; i++)
 							{
-								board[point1_y][i] = false;
-								board[0][i] = true;
+								board[point1_y][i] = 0;
+								board[0][i] = 1;
 							}
 						}
 						point2_y = 0;
@@ -1107,24 +1107,24 @@ void movey(int a) {
 			else if (point2_y == BoardY - 1) {
 				if (point1_x < point2_x) {
 					for (int j = point1_x; j <= point2_x; j++) {
-						board[point1_y][j] = false;
+						board[point1_y][j] = 0;
 					}
 				}
 				else {
 					for (int j = point2_x; j <= point1_x; j++) {
-						board[point1_y][j] = false;
+						board[point1_y][j] = 0;
 					}
 				}
 				point1_y = 0;
 				point2_y = 0;
 				if (point1_x < point2_x) {
 					for (int j = point1_x; j <= point2_x; j++) {
-						board[point2_y][j] = true;
+						board[point2_y][j] = 1;
 					}
 				}
 				else {
 					for (int j = point2_x; j <= point1_x; j++) {
-						board[point2_y][j] = true;
+						board[point2_y][j] = 1;
 					}
 				}
 			}
@@ -1132,7 +1132,7 @@ void movey(int a) {
 	}
 	else {				// 위 Y
 		if (point1_y > point2_y) {
-			if (board[halfy][halfx] != false) {
+			if (board[halfy][halfx] != 0) {
 				if (point2_y > 0) {
 					for (int i = point2_y; i <= point1_y + 1; i++) {
 						if (point1_x < point2_x) {
@@ -1165,43 +1165,43 @@ void movey(int a) {
 				else if (point2_y == 0) {
 					if (point1_x < point2_x) {
 						for (int j = point1_x; j <= point2_x; j++) {
-							board[point1_y][j] = false;
+							board[point1_y][j] = 0;
 						}
 					}
 					else {
 						for (int j = point2_x; j <= point1_x; j++) {
-							board[point1_y][j] = false;
+							board[point1_y][j] = 0;
 						}
 					}
 					point1_y--;
 					point2_y = BoardY - 1;
 					if (point1_x < point2_x) {
 						for (int j = point1_x; j <= point2_x; j++) {
-							board[point2_y][j] = true;
+							board[point2_y][j] = 1;
 						}
 					}
 					else {
 						for (int j = point2_x; j <= point1_x; j++) {
-							board[point2_y][j] = true;
+							board[point2_y][j] = 1;
 						}
 					}
 				}
 			}
 			else {
-				if (board[point1_y][halfx] != false)
+				if (board[point1_y][halfx] != 0)
 				{
 					if (point2_y > 0) {
 						if (point1_x < point2_x) {
 							for (int i = point1_x; i <= point2_x; i++) {
-								board[point2_y][i] = false;
-								board[point1_y - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y - 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_x; i <= point1_x; i++) {
-								board[point2_y][i] = false;
-								board[point1_y - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y - 1][i] = 1;
 							}
 						}
 						point2_y--;
@@ -1210,15 +1210,15 @@ void movey(int a) {
 					else if (point2_y == 0) {
 						if (point1_x < point2_x) {
 							for (int i = point1_x; i <= point2_x; i++) {
-								board[point2_y][i] = false;
-								board[point1_y - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y - 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_x; i <= point1_x; i++) {
-								board[point2_y][i] = false;
-								board[point1_y - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y - 1][i] = 1;
 							}
 						}
 						point2_y = BoardY - 1;
@@ -1231,26 +1231,26 @@ void movey(int a) {
 						if (point1_x < point2_x) {
 							for (int i = 0; i <= point1_x; i++)
 							{
-								board[point1_y][i] = false;
-								board[point2_y - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y - 1][i] = 1;
 							}
 							for (int i = point2_x; i <= BoardX - 1; i++)
 							{
-								board[point1_y][i] = false;
-								board[point2_y - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y - 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_x; i++)
 							{
-								board[point1_y][i] = false;
-								board[point2_y - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y - 1][i] = 1;
 							}
 							for (int i = point1_x; i <= BoardX - 1; i++)
 							{
-								board[point1_y][i] = false;
-								board[point2_y - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y - 1][i] = 1;
 							}
 						}
 						point1_y--;
@@ -1260,26 +1260,26 @@ void movey(int a) {
 						if (point1_x < point2_x) {
 							for (int i = 0; i <= point1_x; i++)
 							{
-								board[point1_y][i] = false;
-								board[BoardY - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[BoardY - 1][i] = 1;
 							}
 							for (int i = point2_x; i <= BoardX - 1; i++)
 							{
-								board[point1_y][i] = false;
-								board[BoardY - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[BoardY - 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_x; i++)
 							{
-								board[point1_y][i] = false;
-								board[BoardY - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[BoardY - 1][i] = 1;
 							}
 							for (int i = point1_x; i <= BoardX - 1; i++)
 							{
-								board[point1_y][i] = false;
-								board[BoardY - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[BoardY - 1][i] = 1;
 							}
 						}
 						point2_y = BoardY - 1;
@@ -1289,7 +1289,7 @@ void movey(int a) {
 			}
 		}
 		else if (point1_y < point2_y) {				
-			if (board[halfy][halfx] != false) {
+			if (board[halfy][halfx] != 0) {
 				if (point1_y > 0) {
 					for (int i = point1_y; i <= point2_y + 1; i++) {
 						if (point1_x < point2_x) {
@@ -1322,43 +1322,43 @@ void movey(int a) {
 				else if (point1_y == 0) {
 					if (point1_x < point2_x) {
 						for (int j = point1_x; j <= point2_x; j++) {
-							board[point2_y][j] = false;
+							board[point2_y][j] = 0;
 						}
 					}
 					else {
 						for (int j = point2_x; j <= point1_x; j++) {
-							board[point2_y][j] = false;
+							board[point2_y][j] = 0;
 						}
 					}
 					point2_y--;
 					point1_y = BoardY - 1;
 					if (point1_x < point2_x) {
 						for (int j = point1_x; j <= point2_x; j++) {
-							board[point1_y][j] = true;
+							board[point1_y][j] = 1;
 						}
 					}
 					else {
 						for (int j = point2_x; j <= point1_x; j++) {
-							board[point1_y][j] = true;
+							board[point1_y][j] = 1;
 						}
 					}
 				}
 			}
 			else {
-				if (board[point1_y][halfx] != false)
+				if (board[point1_y][halfx] != 0)
 				{
 					if (point1_y > 0) {
 						if (point1_x < point2_x) {
 							for (int i = point1_x; i <= point2_x; i++) {
-								board[point1_y][i] = false;
-								board[point2_y - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y - 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_x; i <= point1_x; i++) {
-								board[point1_y][i] = false;
-								board[point2_y - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y - 1][i] = 1;
 							}
 						}
 						point2_y--;
@@ -1367,15 +1367,15 @@ void movey(int a) {
 					else if (point1_y == 0) {
 						if (point1_x < point2_x) {
 							for (int i = point1_x; i <= point2_x; i++) {
-								board[point1_y][i] = false;
-								board[point2_y - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y - 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = point2_x; i <= point1_x; i++) {
-								board[point1_y][i] = false;
-								board[point2_y - 1][i] = true;
+								board[point1_y][i] = 0;
+								board[point2_y - 1][i] = 1;
 							}
 						}
 						point1_y = BoardY - 1;
@@ -1388,26 +1388,26 @@ void movey(int a) {
 						if (point1_x < point2_x) {
 							for (int i = 0; i <= point1_x; i++)
 							{
-								board[point2_y][i] = false;
-								board[point1_y - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y - 1][i] = 1;
 							}
 							for (int i = point2_x; i <= BoardX - 1; i++)
 							{
-								board[point2_y][i] = false;
-								board[point1_y - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y - 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_x; i++)
 							{
-								board[point2_y][i] = false;
-								board[point1_y - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y - 1][i] = 1;
 							}
 							for (int i = point1_x; i <= BoardX - 1; i++)
 							{
-								board[point2_y][i] = false;
-								board[point1_y - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[point1_y - 1][i] = 1;
 							}
 						}
 						point2_y--;
@@ -1417,26 +1417,26 @@ void movey(int a) {
 						if (point1_x < point2_x) {
 							for (int i = 0; i <= point1_x; i++)
 							{
-								board[point2_y][i] = false;
-								board[BoardY - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[BoardY - 1][i] = 1;
 							}
 							for (int i = point2_x; i <= BoardX - 1; i++)
 							{
-								board[point2_y][i] = false;
-								board[BoardY - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[BoardY - 1][i] = 1;
 							}
 						}
 						else
 						{
 							for (int i = 0; i <= point2_x; i++)
 							{
-								board[point2_y][i] = false;
-								board[BoardY - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[BoardY - 1][i] = 1;
 							}
 							for (int i = point1_x; i <= BoardX - 1; i++)
 							{
-								board[point2_y][i] = false;
-								board[BoardY - 1][i] = true;
+								board[point2_y][i] = 0;
+								board[BoardY - 1][i] = 1;
 							}
 						}
 						point1_y = BoardY - 1;
@@ -1478,24 +1478,24 @@ void movey(int a) {
 			else if (point2_y == 0) {
 				if (point1_x < point2_x) {
 					for (int j = point1_x; j <= point2_x; j++) {
-						board[point1_y][j] = false;
+						board[point1_y][j] = 0;
 					}
 				}
 				else {
 					for (int j = point2_x; j <= point1_x; j++) {
-						board[point1_y][j] = false;
+						board[point1_y][j] = 0;
 					}
 				}
 				point1_y = BoardY - 1;
 				point2_y = BoardY - 1;
 				if (point1_x < point2_x) {
 					for (int j = point1_x; j <= point2_x; j++) {
-						board[point2_y][j] = true;
+						board[point2_y][j] = 1;
 					}
 				}
 				else {
 					for (int j = point2_x; j <= point1_x; j++) {
-						board[point2_y][j] = true;
+						board[point2_y][j] = 1;
 					}
 				}
 			}
@@ -1505,7 +1505,7 @@ void movey(int a) {
 void zoomx(int a) {
 	halfx = (point1_x + point2_x) / 2;
 	halfy = (point1_y + point2_y) / 2;
-	if (board[halfy][halfx] == true) {
+	if (board[halfy][halfx] == 1) {
 		if (a == 0) {			//확대 j
 			if (point1_x > point2_x) {
 				if (point1_x < BoardX - 1)
@@ -1583,11 +1583,132 @@ void zoomx(int a) {
 			}
 		}
 	}
+	else {		// 쪼개진 사각형
+		if (a == 0) {			//확대 j
+			if (board[point1_y][halfx] == 0)
+			{
+				if (point1_x > point2_x) {
+					if (point2_x < BoardX - 1)
+					{
+						point2_x++;
+						if (point1_y > point2_y) {
+							for (int i = point2_y; i <= point1_y; i++) {
+								board[i][point2_x] = 1;
+							}
+						}
+						else if (point1_y < point2_y) {
+							for (int i = point1_y; i <= point2_y; i++) {
+								board[i][point2_x] = 1;
+							}
+						}
+						else {
+							board[point1_y][point2_x] = 1;
+						}
+					}
+				}
+				else
+				{
+					if (point1_x < BoardX - 1)
+					{
+						point1_x++;
+						if (point1_y > point2_y) {
+							for (int i = point2_y; i <= point1_y; i++) {
+								board[i][point1_x] = 1;
+							}
+						}
+						else if (point1_y < point2_y) {
+							for (int i = point1_y; i <= point2_y; i++) {
+								board[i][point1_x] = 1;
+							}
+						}
+						else {
+							board[point1_y][point1_x] = 1;
+						}
+					}
+				}
+			}
+		}
+		else {					// 축소
+			if (point1_x > point2_x) {
+				if (point2_x > 0)
+				{
+					if (point1_y > point2_y) {
+						for (int i = point2_y; i <= point1_y; i++) {
+							board[i][point2_x] = 0;
+						}
+					}
+					else if (point1_y < point2_y) {
+						for (int i = point1_y; i <= point2_y; i++) {
+							board[i][point2_x] = 0;
+						}
+					}
+					else {
+						board[point1_y][point2_x] = 0;
+					}
+					point2_x--;
+				}
+				else if(point2_x == 0)
+				{
+					if (point1_y > point2_y) {
+						for (int i = point2_y; i <= point1_y; i++) {
+							board[i][point2_x] = 0;
+						}
+					}
+					else if (point1_y < point2_y) {
+						for (int i = point1_y; i <= point2_y; i++) {
+							board[i][point2_x] = 0;
+						}
+					}
+					else {
+						board[point1_y][point2_x] = 0;
+					}
+					point2_x = BoardX - 1;
+				}
+			}
+			else
+			{
+				if (point1_x > 0)
+				{
+					if (point1_y > point2_y) {
+						for (int i = point2_y; i <= point1_y; i++) {
+							board[i][point1_x] = 0;
+						}
+					}
+					else if (point1_y < point2_y) {
+						for (int i = point1_y; i <= point2_y; i++) {
+							board[i][point1_x] = 0;
+						}
+					}
+					else {
+						board[point1_y][point1_x] = 0;
+					}
+					point1_x--;
+				}
+				else if (point1_x == 0)
+				{
+					if (point1_y > point2_y) {
+						for (int i = point2_y; i <= point1_y; i++) {
+							board[i][point1_x] = 0;
+						}
+					}
+					else if (point1_y < point2_y) {
+						for (int i = point1_y; i <= point2_y; i++) {
+							board[i][point1_x] = 0;
+						}
+					}
+					else {
+						board[point1_y][point1_x] = 0;
+					}
+					point1_x = BoardX - 1;
+				}
+			}
+		}
+	}
 }
 void zoomy(int a) {
 	halfx = (point1_x + point2_x) / 2;
 	halfy = (point1_y + point2_y) / 2;
-	if (board[halfy][halfx] == true) {
+	if (board[halfy][halfx] == 1) {
 		if (a == 0) {			//확대 l
 			if (point1_y > point2_y) {
 				if (point1_y < BoardY - 1)
@@ -1659,6 +1780,127 @@ void zoomy(int a) {
 					board[point1_y][point1_x] = 0;
 				}
 				point1_y--;
+			}
+		}
+	}
+	else {		// 쪼개진 사각형
+		if (a == 0) {			//확대 
+			if (board[halfy][point1_x] == 0)
+			{
+				if (point1_y > point2_y) {
+					if (point2_y < BoardY - 1)
+					{
+						point2_y++;
+						if (point1_x > point2_x) {
+							for (int i = point2_x; i <= point1_x; i++) {
+								board[point2_y][i] = 1;
+							}
+						}
+						else if (point1_x < point2_x) {
+							for (int i = point1_x; i <= point2_x; i++) {
+								board[point2_y][i] = 1;
+							}
+						}
+						else {
+							board[point2_y][point1_x] = 1;
+						}
+					}
+				}
+				else
+				{
+					if (point1_y < BoardY - 1)
+					{
+						point1_y++;
+						if (point1_x > point2_x) {
+							for (int i = point2_x; i <= point1_x; i++) {
+								board[point1_y][i] = 1;
+							}
+						}
+						else if (point1_x < point2_x) {
+							for (int i = point1_x; i <= point2_x; i++) {
+								board[point1_y][i] = 1;
+							}
+						}
+						else {
+							board[point1_y][point1_x] = 1;
+						}
+					}
+				}
+			}
+		}
+		else {					// 축소
+			if (point1_y > point2_y) {
+				if (point2_y > 0)
+				{
+					if (point1_x > point2_x) {
+						for (int i = point2_x; i <= point1_x; i++) {
+							board[point2_y][i] = 0;
+						}
+					}
+					else if (point1_x < point2_x) {
+						for (int i = point1_x; i <= point2_x; i++) {
+							board[point2_y][i] = 0;
+						}
+					}
+					else {
+						board[point2_y][point1_x] = 0;
+					}
+					point2_y--;
+				}
+				else if (point2_y == 0)
+				{
+					if (point1_x > point2_x) {
+						for (int i = point2_x; i <= point1_x; i++) {
+							board[point2_y][i] = 0;
+						}
+					}
+					else if (point1_x < point2_x) {
+						for (int i = point1_x; i <= point2_x; i++) {
+							board[point2_y][i] = 0;
+						}
+					}
+					else {
+						board[point2_y][point1_x] = 0;
+					}
+					point2_y = BoardY - 1;
+				}
+			}
+			else
+			{
+				if (point1_y > 0)
+				{
+					if (point1_x > point2_x) {
+						for (int i = point2_x; i <= point1_x; i++) {
+							board[point1_y][i] = 0;
+						}
+					}
+					else if (point1_x < point2_x) {
+						for (int i = point1_x; i <= point2_x; i++) {
+							board[point1_y][i] = 0;
+						}
+					}
+					else {
+						board[point1_y][point1_x] = 0;
+					}
+					point1_y--;
+				}
+				else if (point1_y == 0)
+				{
+					if (point1_x > point2_x) {
+						for (int i = point2_x; i <= point1_x; i++) {
+							board[point1_y][i] = 0;
+						}
+					}
+					else if (point1_x < point2_x) {
+						for (int i = point1_x; i <= point2_x; i++) {
+							board[point1_y][i] = 0;
+						}
+					}
+					else {
+						board[point1_y][point1_x] = 0;
+					}
+					point1_y = BoardY - 1;
+				}
 			}
 		}
 	}
