@@ -39,7 +39,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 }
 GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수 
 {
-	glClearColor(red, green, blue, 1.0f); // 바탕색을 ‘blue’ 로 지정
+	glClearColor(red, green, blue, 1.0f); 
 	glClear(GL_COLOR_BUFFER_BIT); // 설정된 색으로 전체를 칠하기
 	// 그리기 부분 구현
 	//--- 그리기 관련 부분이 여기에 포함된다.
