@@ -131,7 +131,7 @@ void Motion(int x, int y)
 	GLclampf mousex = (x - halfx) / halfx;
 	GLclampf mousey = 1 - (y / halfy);
 
-	if (left == true) {
+	if (left) {
 		for (int i = viewRect - 1; i >= 0; --i) {
 			if ((mousex <= rect[i].x2) && (mousex >= rect[i].x1)) {
 				if ((mousey <= rect[i].y2) && (mousey >= rect[i].y1)) {
