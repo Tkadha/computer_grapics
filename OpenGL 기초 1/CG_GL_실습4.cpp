@@ -27,7 +27,6 @@ public:
 	GLfloat x2;
 	GLfloat y2;
 };
-RGB basergb;
 RGB rgb[5];
 Rect rect[5];
 Rect first_rect[5];
@@ -73,7 +72,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 }
 GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수 
 {
-	glClearColor(basergb.r, basergb.g, basergb.b, 0.8f);
+	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT); // 설정된 색으로 전체를 칠하기
 	// 그리기 부분 구현
 	for (int i = 0; i < viewRect; ++i) {
@@ -136,6 +135,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		break;
 	case 'c':
 	case 'C':
+
 		break;
 	case 'o':
 	case 'O':
