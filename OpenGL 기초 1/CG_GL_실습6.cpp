@@ -141,6 +141,7 @@ void Mouse(int button, int state, int x, int y)
 						}
 						else {					// 8°³ ºÐ¸®
 							divide[i] = 3;
+
 							glutTimerFunc(10, Dia_UDLR, i);
 							break;
 						}
@@ -157,20 +158,38 @@ void UDLR(int value)
 	for (int i = 0; i < 4; ++i) {
 		switch (i) {
 		case 0:
-			Divide_rect[value][i].x2 -= 0.5f * Amount;
+			Divide_rect[value][i].x1 += 0.5f * Amount;
 			Divide_rect[value][i].y1 += Amount;
 			Divide_rect[value][i].y2 += 0.5f * Amount;
 			break;
 		case 1:
+			Divide_rect[value][i].x1 += Amount;
+			Divide_rect[value][i].x2 += 0.5f * Amount;
+			Divide_rect[value][i].y2 -= 0.5f * Amount;
 			break;
 		case 2:
+			Divide_rect[value][i].x1 -= 0.5f * Amount;
+			Divide_rect[value][i].x2 -= Amount;
+			Divide_rect[value][i].y2 -= 0.5f * Amount;
 			break;
 		case 3:
+			Divide_rect[value][i].x2 -= 0.5f * Amount;
+			Divide_rect[value][i].y1 -= 0.5f * Amount;
+			Divide_rect[value][i].y2 -= Amount;
 			break;
 		}
 	}
 	glutPostRedisplay();
-	glutTimerFunc(100, UDLR, value);
+	if (Divide_rect[value][0].x1 < Divide_rect[value][0].x2)
+	{
+		glutTimerFunc(100, UDLR, value);
+	}
+	else {
+		for (int i = 0; i < 4; ++i) {
+			Divide_rect[value][i].x1 = Divide_rect[value][i].x2;
+			Divide_rect[value][i].y1 = Divide_rect[value][i].y2;
+		}
+	}
 
 }
 void Diagonal(int value)
@@ -216,6 +235,7 @@ void Diagonal(int value)
 }
 void Dia_UDLR(int value)
 {
+
 	glutPostRedisplay();
 	glutTimerFunc(10, Dia_UDLR, value);
 }
