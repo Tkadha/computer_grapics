@@ -30,6 +30,7 @@ RGB basergb;
 RGB rgb[5];
 Rect rect[5];
 int viewRect;
+int select;
 bool left;
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정 
 { //--- 윈도우 생성하기
@@ -84,10 +85,25 @@ GLvoid Reshape(int w, int h) //--- 콜백 함수: 다시 그리기 콜백 함수
 
 void Mouse(int button, int state, int x, int y)
 {
+	GLfloat halfx = MAXX / 2;
+	GLfloat halfy = MAXY / 2;
+	GLclampf mousex = (x - halfx) / halfx;
+	GLclampf mousey = 1 - (y / halfy);
+
 	if (state == GLUT_DOWN)
 	{
 		if (button == GLUT_LEFT_BUTTON)
-			left = true;
+		{
+			for (int i = viewRect - 1; i >= 0; --i) {
+				if ((mousex <= rect[i].x2) && (mousex >= rect[i].x1)) {
+					if ((mousey <= rect[i].y2) && (mousey >= rect[i].y1)) {
+						left = true;
+						select = i;
+						break;
+					}
+				}
+			}
+		}
 	}
 	else if (state == GLUT_UP) {
 		if (button == GLUT_LEFT_BUTTON)
@@ -132,17 +148,12 @@ void Motion(int x, int y)
 	GLclampf mousey = 1 - (y / halfy);
 
 	if (left) {
-		for (int i = viewRect - 1; i >= 0; --i) {
-			if ((mousex <= rect[i].x2) && (mousex >= rect[i].x1)) {
-				if ((mousey <= rect[i].y2) && (mousey >= rect[i].y1)) {
-					rect[i].x1 = mousex - 0.1f;
-					rect[i].y1 = mousey - 0.1f;
-					rect[i].x2 = mousex + 0.1f;
-					rect[i].y2 = mousey + 0.1f;
-					break;
-				}
-			}
-		}
+
+		rect[select].x1 = mousex - 0.1f;
+		rect[select].y1 = mousey - 0.1f;
+		rect[select].x2 = mousex + 0.1f;
+		rect[select].y2 = mousey + 0.1f;
+
 	}
 	glutPostRedisplay();
 }
