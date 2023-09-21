@@ -87,7 +87,9 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		else {
 			glColor3f(rgb[i].r, rgb[i].g, rgb[i].b);
 			if (divide[i] == 3) {
-
+				for (int j = 0; j < 8; ++j) {
+					glRectf(Divide_rect[i][j].x1, Divide_rect[i][j].y1, Divide_rect[i][j].x2, Divide_rect[i][j].y2);
+				}
 			}
 			else
 			{
@@ -136,13 +138,23 @@ void Mouse(int button, int state, int x, int y)
 							Divide_rect[i][1] = { (rect[i].x1 + rect[i].x2) / 2, (rect[i].y1 + rect[i].y2) / 2, rect[i].x2, rect[i].y2 };
 							Divide_rect[i][2] = { rect[i].x1, rect[i].y1, (rect[i].x1 + rect[i].x2) / 2, (rect[i].y1 + rect[i].y2) / 2 };
 							Divide_rect[i][3] = { (rect[i].x1 + rect[i].x2) / 2, rect[i].y1, rect[i].x2, (rect[i].y1 + rect[i].y2) / 2 };
-							glutTimerFunc(10, Diagonal, i);
+							glutTimerFunc(100, Diagonal, i);
 							break;
 						}
 						else {					// 8개 분리
 							divide[i] = 3;
-
-							glutTimerFunc(10, Dia_UDLR, i);
+							//대각선
+							Divide_rect[i][0] = { rect[i].x1, (rect[i].y1 + rect[i].y2) / 2, (rect[i].x1 + rect[i].x2) / 2, rect[i].y2 };
+							Divide_rect[i][1] = { (rect[i].x1 + rect[i].x2) / 2, (rect[i].y1 + rect[i].y2) / 2, rect[i].x2, rect[i].y2 };
+							Divide_rect[i][2] = { rect[i].x1, rect[i].y1, (rect[i].x1 + rect[i].x2) / 2, (rect[i].y1 + rect[i].y2) / 2 };
+							Divide_rect[i][3] = { (rect[i].x1 + rect[i].x2) / 2, rect[i].y1, rect[i].x2, (rect[i].y1 + rect[i].y2) / 2 }; 
+							//상하좌우
+							Divide_rect[i][4] = { rect[i].x1, (rect[i].y1 + rect[i].y2) / 2, (rect[i].x1 + rect[i].x2) / 2, rect[i].y2 };
+							Divide_rect[i][5] = { (rect[i].x1 + rect[i].x2) / 2, (rect[i].y1 + rect[i].y2) / 2, rect[i].x2, rect[i].y2 };
+							Divide_rect[i][6] = { rect[i].x1, rect[i].y1, (rect[i].x1 + rect[i].x2) / 2, (rect[i].y1 + rect[i].y2) / 2 };
+							Divide_rect[i][7] = { (rect[i].x1 + rect[i].x2) / 2, rect[i].y1, rect[i].x2, (rect[i].y1 + rect[i].y2) / 2 };
+							
+							glutTimerFunc(100, Dia_UDLR, i);
 							break;
 						}
 					}
@@ -170,7 +182,7 @@ void UDLR(int value)
 		case 2:
 			Divide_rect[value][i].x1 -= 0.5f * Amount;
 			Divide_rect[value][i].x2 -= Amount;
-			Divide_rect[value][i].y2 -= 0.5f * Amount;
+			Divide_rect[value][i].y1 += 0.5f * Amount;
 			break;
 		case 3:
 			Divide_rect[value][i].x2 -= 0.5f * Amount;
@@ -195,30 +207,31 @@ void UDLR(int value)
 void Diagonal(int value)
 {
 	for (int i = 0; i < 4; ++i) {
-		if (i % 2 == 0) {
+		switch (i) {
+		case 0:
 			Divide_rect[value][i].x1 -= 0.5f * Amount;
 			Divide_rect[value][i].x2 -= Amount;
-			if (i == 0) {
-				Divide_rect[value][i].y1 += Amount;
-				Divide_rect[value][i].y2 += 0.5f * Amount;
-			}
-			else {
-				Divide_rect[value][i].y1 -= 0.5f * Amount;
-				Divide_rect[value][i].y2 -= Amount;
-			}
-		}
-		else
-		{
+			Divide_rect[value][i].y1 += Amount;
+			Divide_rect[value][i].y2 += 0.5f * Amount;
+			break;
+		case 1:
 			Divide_rect[value][i].x1 += Amount;
 			Divide_rect[value][i].x2 += 0.5f * Amount;
-			if (i == 1) {
-				Divide_rect[value][i].y1 += Amount;
-				Divide_rect[value][i].y2 += 0.5f * Amount;
-			}
-			else {
-				Divide_rect[value][i].y1 -= 0.5f * Amount;
-				Divide_rect[value][i].y2 -= Amount;
-			}
+			Divide_rect[value][i].y1 += Amount;
+			Divide_rect[value][i].y2 += 0.5f * Amount;
+			break;
+		case 2:
+			Divide_rect[value][i].x1 -= 0.5f * Amount;
+			Divide_rect[value][i].x2 -= Amount;
+			Divide_rect[value][i].y1 -= 0.5f * Amount;
+			Divide_rect[value][i].y2 -= Amount;
+			break;
+		case 3:
+			Divide_rect[value][i].x1 += Amount;
+			Divide_rect[value][i].x2 += 0.5f * Amount;
+			Divide_rect[value][i].y1 -= 0.5f * Amount;
+			Divide_rect[value][i].y2 -= Amount;
+			break;
 		}
 	}
 	glutPostRedisplay();
@@ -235,7 +248,63 @@ void Diagonal(int value)
 }
 void Dia_UDLR(int value)
 {
-
+	for (int i = 0; i < 8; ++i) {
+		switch (i) {
+		case 0:
+			Divide_rect[value][i].x1 -= 0.5f * Amount;
+			Divide_rect[value][i].x2 -= Amount;
+			Divide_rect[value][i].y1 += Amount;
+			Divide_rect[value][i].y2 += 0.5f * Amount;
+			break;
+		case 1:
+			Divide_rect[value][i].x1 += Amount;
+			Divide_rect[value][i].x2 += 0.5f * Amount;
+			Divide_rect[value][i].y1 += Amount;
+			Divide_rect[value][i].y2 += 0.5f * Amount;
+			break;
+		case 2:
+			Divide_rect[value][i].x1 -= 0.5f * Amount;
+			Divide_rect[value][i].x2 -= Amount;
+			Divide_rect[value][i].y1 -= 0.5f * Amount;
+			Divide_rect[value][i].y2 -= Amount;
+			break;
+		case 3:
+			Divide_rect[value][i].x1 += Amount;
+			Divide_rect[value][i].x2 += 0.5f * Amount;
+			Divide_rect[value][i].y1 -= 0.5f * Amount;
+			Divide_rect[value][i].y2 -= Amount;
+			break;
+		case 4:
+			Divide_rect[value][i].x1 += 0.5f * Amount;
+			Divide_rect[value][i].y1 += Amount;
+			Divide_rect[value][i].y2 += 0.5f * Amount;
+			break;
+		case 5:
+			Divide_rect[value][i].x1 += Amount;
+			Divide_rect[value][i].x2 += 0.5f * Amount;
+			Divide_rect[value][i].y2 -= 0.5f * Amount;
+			break;
+		case 6:
+			Divide_rect[value][i].x1 -= 0.5f * Amount;
+			Divide_rect[value][i].x2 -= Amount;
+			Divide_rect[value][i].y1 += 0.5f * Amount;
+			break;
+		case 7:
+			Divide_rect[value][i].x2 -= 0.5f * Amount;
+			Divide_rect[value][i].y1 -= 0.5f * Amount;
+			Divide_rect[value][i].y2 -= Amount;
+			break;
+		}
+	}
 	glutPostRedisplay();
-	glutTimerFunc(10, Dia_UDLR, value);
+	if (Divide_rect[value][0].x1 < Divide_rect[value][0].x2)
+	{
+		glutTimerFunc(100, Dia_UDLR, value);
+	}
+	else {
+		for (int i = 0; i < 8; ++i) {
+			Divide_rect[value][i].x1 = Divide_rect[value][i].x2;
+			Divide_rect[value][i].y1 = Divide_rect[value][i].y2;
+		}
+	}
 }
