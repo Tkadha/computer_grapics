@@ -19,7 +19,7 @@ GLvoid Keyboard(unsigned char key, int x, int y);
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID; 
-GLuint vao, vbo[10][2];
+GLuint vao, vbo[2];
 GLfloat point[10][6];
 GLfloat RGB[10][6];
 int shape_mode;
@@ -51,9 +51,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	make_shaderProgram();
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
-	for (int i = 0; i < 10; ++i) {
-		glGenBuffers(2, vbo[i]);
-	}
+	glGenBuffers(2, vbo);
 	//--- 세이더 읽어와서 세이더 프로그램 만들기
 	glutDisplayFunc(drawScene); //--- 출력 콜백 함수
 	glutReshapeFunc(Reshape);
@@ -172,8 +170,8 @@ void Mouse(int button, int state, int x, int y)
 			shape_type[shape_count] = shape_mode;
 			if (shape_mode == 0) {
 				point[shape_count][0] = mousex;
-				point[shape_count][0] = mousey;
-				point[shape_count][0] = 0.0f;
+				point[shape_count][1] = mousey;
+				point[shape_count][2] = 0.0f;
 
 				++shape_count;
 			}
@@ -189,11 +187,11 @@ void Mouse(int button, int state, int x, int y)
 		}
 	}
 	//point  와 rgb 쌓고 한번에 바인드해서 프린트
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[shape_count][0]);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(GLfloat), point, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[shape_count][1]);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 	glBufferData(GL_ARRAY_BUFFER, 3 * sizeof(GLfloat), RGB, GL_STATIC_DRAW);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(1);
