@@ -43,7 +43,14 @@ GLfloat h[4];
 int mode_timer;
 int mode;
 
+int max_count[4];
+int count[4];
+int way[4];
+GLfloat Plus_Min[2];
+GLfloat pos_triangle[4][9];
 
+int angle[4];
+GLfloat radius[4];
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
 
@@ -62,10 +69,14 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 			diag[i][j] = 0.005f;
 			zig[i][j] = 0.005f;
 		}
-	line[0][1] = 1;
-	line[0][4] = -1;
-	line[1][0] = 1;
-	line[1][3] = -1;
+	for (int i = 0; i < 2; ++i)
+		Plus_Min[i] = 0.005f;
+	{
+		line[0][1] = 1;
+		line[0][4] = -1;
+		line[1][0] = 1;
+		line[1][3] = -1;
+	}
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(2, vbo);
 	glGenBuffers(2, vbo_line);
@@ -311,17 +322,36 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	case '2':
 		mode_timer = 2;
 		for (int i = 0; i < 4; ++i)
+		{
+			triangle[i][0] = triangle[i][3] - r[i];
+			triangle[i][1] = triangle[i][4];
+			triangle[i][6] = triangle[i][3] - r[i]/2;
+			triangle[i][7] = triangle[i][4] + h[i];
 			glutTimerFunc(10, zigzag, i);
+		}
 		break;
 	case '3':
 		mode_timer = 3;
 		for (int i = 0; i < 4; ++i)
-			glutTimerFunc(10, rec_spiral, i);
+			for (int j = 0; j < 9; ++j)
+				pos_triangle[i][j] = triangle[i][j];
+		for (int i = 0; i < 4; ++i)
+		{
+			max_count[i] = 10;
+			glutTimerFunc(1, rec_spiral, i);
+		}
 		break;
 	case '4':
 		mode_timer = 4;
 		for (int i = 0; i < 4; ++i)
-			glutTimerFunc(10, circle_spiral, i);
+			for (int j = 0; j < 9; ++j)
+				pos_triangle[i][j] = triangle[i][j];
+		for (int i = 0; i < 4; ++i)
+		{
+			angle[i] = 10;
+			radius[i] = 0.001f;
+			glutTimerFunc(100, circle_spiral, i);
+		}
 		break;
 	}
 	glBindVertexArray(vao);
@@ -493,29 +523,79 @@ void zigzag(int value)
 		glutTimerFunc(10, zigzag, value);
 	}
 }
-void rec_spiral(int value) 
+void rec_spiral(int value)
 {
-
-
-
+	if (way[value] == 0) {
+		triangle[value][0] += Plus_Min[0];
+		triangle[value][3] += Plus_Min[0];
+		triangle[value][6] += Plus_Min[0];
+	}
+	else if (way[value] == 1) {
+		triangle[value][1] += Plus_Min[1];
+		triangle[value][4] += Plus_Min[1];
+		triangle[value][7] += Plus_Min[1];
+	}
+	else if (way[value] == 2) {
+		triangle[value][0] -= Plus_Min[0];
+		triangle[value][3] -= Plus_Min[0];
+		triangle[value][6] -= Plus_Min[0];
+	}
+	else if (way[value] == 3) {
+		triangle[value][1] -= Plus_Min[1];
+		triangle[value][4] -= Plus_Min[1];
+		triangle[value][7] -= Plus_Min[1];
+	}
+	++count[value];
+	if (count[value] > max_count[value]) {
+		max_count[value] += 10;
+		++way[value];
+		count[value] = 0;
+		if (way[value] > 3)
+		{
+			way[value] = 0;
+		}
+	}
+	if (max_count[value] > 300) {
+		for (int i = 0; i < 4; ++i)
+			for (int j = 0; j < 9; ++j)
+				triangle[i][j] = pos_triangle[i][j];
+		max_count[value] = 10;
+	}
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, 4 * 9 * sizeof(GLfloat), triangle, GL_DYNAMIC_DRAW);
 	glutPostRedisplay();
 	if (mode_timer == 3) {
-		glutTimerFunc(10, rec_spiral, value);
+		glutTimerFunc(1, rec_spiral, value);
 	}
 }
 void circle_spiral(int value)
 {
-
-
-
+	for (int i = 0; i < 3; i++) {
+		triangle[value][i * 3] = triangle[value][i * 3] + cos(angle[value] * PI / 180) * radius[value];
+		triangle[value][i * 3+1] = triangle[value][i * 3 + 1] + sin(angle[value] * PI / 180) * radius[value];
+	}
+	angle[value]+=10;
+	radius[value] += 0.001f;
+	if (angle[value] > 1500)
+	{
+		radius[value] = 0.001f;
+		angle[value] = 0;
+		for (int i = 0; i < 4; ++i)
+			for (int j = 0; j < 9; ++j)
+				triangle[i][j] = pos_triangle[i][j];
+	}
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, 4 * 9 * sizeof(GLfloat), triangle, GL_DYNAMIC_DRAW);
 	glutPostRedisplay();
 	if (mode_timer == 4) {
 		glutTimerFunc(10, circle_spiral, value);
+	}
+	else
+	{
+		for (int i = 0; i < 4; ++i)
+			for (int j = 0; j < 9; ++j)
+				triangle[i][j] = pos_triangle[i][j];
 	}
 }
