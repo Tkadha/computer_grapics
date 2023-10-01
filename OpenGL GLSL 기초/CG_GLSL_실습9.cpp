@@ -5,10 +5,11 @@
 #include <gl/freeglut_ext.h>
 #include <stdlib.h>
 #include <random>
+#include <cmath>
 
 #define Width 1000
 #define Height 600
-
+#define PI 3.1415926
 
 void make_vertexShaders();
 void make_fragmentShaders();
@@ -35,7 +36,7 @@ GLfloat line[2][6];
 GLfloat line_RGB[2][6];
 GLfloat diag[4][2];
 GLfloat zig[4][2];
-int zigzag_count;
+int zigzag_count[4];
 GLfloat r[4];
 GLfloat h[4];
 
@@ -391,13 +392,19 @@ void diagonal(int value)
 		}
 	}
 	if (diag[value][0] < 0) {
-		if ((triangle[value][0] <= -1) || (triangle[value][3] <= -1) || (triangle[value][6] <= -1)) {
+		if ((triangle[value][0] <= -1) || (triangle[value][3] <= -1)) {
+			triangle[value][3] = triangle[value][0];
+			triangle[value][4] = triangle[value][1] - r[value];
+			triangle[value][6] = triangle[value][0] + h[value]/2;
+			triangle[value][7] = triangle[value][1] - r[value] / 2;
+			diag[value][0] *= -1;
+		}
+		else if (triangle[value][6] <= -1)
+		{
 			triangle[value][0] = triangle[value][3];
-			triangle[value][1] = triangle[value][4];
-			triangle[value][3] = triangle[value][0] + r[value];
-			triangle[value][4] = triangle[value][1];
-			triangle[value][6] = triangle[value][0] + r[value] / 2;
-			triangle[value][7] = triangle[value][1] + h[value];
+			triangle[value][1] = triangle[value][4] + r[value];
+			triangle[value][6] = triangle[value][3] + h[value]/2;
+			triangle[value][7] = triangle[value][4] + r[value]/2;
 			diag[value][0] *= -1;
 		}
 	}
@@ -411,79 +418,73 @@ void diagonal(int value)
 }
 void zigzag(int value) 
 {
-	if (zigzag_count == 0) {
+	if (zigzag_count[value] == 0) {
 		triangle[value][0] += zig[value][0];
 		triangle[value][3] += zig[value][0];
 		triangle[value][6] += zig[value][0];
-		if (zig[value][1] < 0) {
+		if (zig[value][0] < 0) {
 			if (triangle[value][3] < -1) {
-				++zigzag_count;
-				triangle[value][3] = triangle[value][0];
-				triangle[value][4] = triangle[value][1] - r[value];
-				triangle[value][6] = triangle[value][0] + h[value];
-				triangle[value][7] = triangle[value][1] - r[value] / 2;
-				if (triangle[value][4] < -1) {
-					zig[value][1] *= -1;
-				}
-			}
-			else if (triangle[value][3] > 1) {
-				++zigzag_count;
+				++zigzag_count[value];
 				triangle[value][0] = triangle[value][3];
-				triangle[value][1] = triangle[value][4] + r[value];
-				triangle[value][6] = triangle[value][3] - h[value];
-				triangle[value][7] = triangle[value][4] + r[value] / 2;
-				if (triangle[value][1] < -1) {
-					zig[value][1] *= -1;
-				}
-			}
-			else if (triangle[value][0] < -1) {
-				++zigzag_count;
-				triangle[value][0] = triangle[value][3];
-				triangle[value][1] = triangle[value][4] + r[value];
-				triangle[value][6] = triangle[value][3] + h[value];
-				triangle[value][7] = triangle[value][4] + r[value] / 2;
-				if (triangle[value][1] < -1) {
-					zig[value][1] *= -1;
-				}
-			}
-			else if (triangle[value][0] > 1) {
-				++zigzag_count;
-				triangle[value][3] = triangle[value][0];
-				triangle[value][4] = triangle[value][1] + r[value];
-				triangle[value][6] = triangle[value][0] - h[value];
-				triangle[value][7] = triangle[value][1] + r[value] / 2;
+				triangle[value][1] = triangle[value][4] - r[value];
+				triangle[value][6] = triangle[value][3] + h[value] / 2;
+				triangle[value][7] = triangle[value][4] - r[value] / 2;
+				zig[value][0] *= -1;
 				if (triangle[value][4] < -1) {
 					zig[value][1] *= -1;
 				}
 			}
 		}
 		else {
-			if (triangle[value][3] < -1) {
-				++zigzag_count;
-				triangle[value][3] = triangle[value][0];
-				triangle[value][4] = triangle[value][1] - r[value];
-				triangle[value][6] = triangle[value][0] + h[value];
-				triangle[value][7] = triangle[value][0] - r[value] / 2;
+			if (triangle[value][3] > 1) {
+				++zigzag_count[value];
+				triangle[value][0] = triangle[value][3];
+				triangle[value][1] = triangle[value][4] - r[value];
+				triangle[value][6] = triangle[value][3] - h[value] / 2;
+				triangle[value][7] = triangle[value][4] - r[value] / 2;
+				zig[value][0] *= -1;
 				if (triangle[value][4] > 1) {
 					zig[value][1] *= -1;
 				}
 			}
-			else if (triangle[value][3] > 1) {
-				++zigzag_count;
-				triangle[value][0] = triangle[value][3];
-				triangle[value][1] = triangle[value][4] + r[value];
-				triangle[value][6] = triangle[value][3] - h[value];
-				triangle[value][7] = triangle[value][4] + r[value] / 2;
-				if (triangle[value][1] > 1) {
-					zig[value][1] *= -1;
-				}
-			}
+
 		}
 	}
 	else {
-
+		++zigzag_count[value];
+		triangle[value][1] += zig[value][1];
+		triangle[value][4] += zig[value][1];
+		triangle[value][7] += zig[value][1];
+		if (zig[value][1] > 0)
+		{
+			if (triangle[value][4] > 1) {
+				zigzag_count[value] = 100;
+				zig[value][1] *= -1;
+			}
+		}
+		else if (zig[value][1] < 0) {
+			if (triangle[value][4] < -1) {
+				zigzag_count[value] = 100;
+				zig[value][1] *= -1;
+			}
+		}
+		if (zigzag_count[value] > 100) {
+			if (triangle[value][6] < triangle[value][0]) {
+				triangle[value][3] = triangle[value][0] - r[value];
+				triangle[value][4] = triangle[value][1];
+				triangle[value][6] = triangle[value][0] - r[value] / 2;
+				triangle[value][7] = triangle[value][1] - h[value];
+			}
+			else
+			{
+				triangle[value][3] = triangle[value][0] + r[value];
+				triangle[value][4] = triangle[value][1];
+				triangle[value][6] = triangle[value][0] + r[value] / 2;
+				triangle[value][7] = triangle[value][1] + h[value];
+			}
+			zigzag_count[value] = 0;
+		}
 	}
-
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, 4 * 9 * sizeof(GLfloat), triangle, GL_DYNAMIC_DRAW);
