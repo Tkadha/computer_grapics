@@ -6,10 +6,10 @@
 #include <stdlib.h>
 #include <random>
 
-#define Width 1000
-#define Height 600
-#define PI 3.1415926
+#define Width 1200
+#define Height 800
 
+void reset_setting();
 void make_vertexShaders();
 void make_fragmentShaders();
 void make_shaderProgram();
@@ -18,22 +18,25 @@ GLvoid Reshape(int w, int h);
 char* filetobuf(const char* file);
 GLvoid Keyboard(unsigned char key, int x, int y);
 
-
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID;
-GLuint vao, vbo[2];
+GLuint vao, vbo[2], onevbo[2];
 GLuint vbo_line[2];
-GLfloat triangle[4][9];
-GLfloat RGB[4][9];
+GLfloat shape[4][3][9];
+GLfloat one_shape[3][9];
+GLfloat one_RGB[27];
+GLfloat RGB[4][27];
 GLfloat line[2][6];
 GLfloat line_RGB[2][6];
-
-int mode;
-
+bool draw;
+int shape_type[4];
+int one_shape_type;
+std::random_device rd;
+std::mt19937 gen(rd());
+std::uniform_real_distribution<> dist(0, 1);
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
-
 	//--- 윈도우 생성하기
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
@@ -43,24 +46,31 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glewExperimental = GL_TRUE;
 	glewInit();
 	make_shaderProgram();
+	for (int i = 0; i < 4; ++i) {
+		RGB[i][24] = RGB[i][21] = RGB[i][18] = RGB[i][15] = RGB[i][12] = RGB[i][9] = RGB[i][6] = RGB[i][3] = RGB[i][0] = dist(gen);
+		RGB[i][25] = RGB[i][22] = RGB[i][19] = RGB[i][16] = RGB[i][13] = RGB[i][10] = RGB[i][7] = RGB[i][4] = RGB[i][1] = dist(gen);
+		RGB[i][26] = RGB[i][23] = RGB[i][20] = RGB[i][17] = RGB[i][14] = RGB[i][11] = RGB[i][8] = RGB[i][5] = RGB[i][2] = dist(gen);
+	}
 	{
 		line[0][1] = 1;
 		line[0][4] = -1;
 		line[1][0] = 1;
 		line[1][3] = -1;
 	}
+	reset_setting();
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(2, vbo);
+	glGenBuffers(2, onevbo);
 	glGenBuffers(2, vbo_line);
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, 4 * 9 * sizeof(GLfloat), triangle, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, 4 * 9 * sizeof(GLfloat), RGB, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(RGB), RGB, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_line[0]);
-	glBufferData(GL_ARRAY_BUFFER, 2 * 6 * sizeof(GLfloat), line, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(line), line, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_line[1]);
-	glBufferData(GL_ARRAY_BUFFER, 2 * 6 * sizeof(GLfloat), line_RGB, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(line_RGB), line_RGB, GL_STATIC_DRAW);
 	//--- 세이더 읽어와서 세이더 프로그램 만들기
 	glutDisplayFunc(drawScene); //--- 출력 콜백 함수
 	glutReshapeFunc(Reshape);
@@ -71,7 +81,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 {
 	GLfloat rColor, gColor, bColor;
-	rColor = gColor = bColor = 1.0;
+	rColor = gColor = bColor = 0.5;
 	glClearColor(rColor, gColor, bColor, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glUseProgram(shaderProgramID);
@@ -88,22 +98,72 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_line[1]);
 		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(i * 6 * sizeof(GLfloat)));
 		glEnableVertexAttribArray(ColorLocation);
+		glLineWidth(1);
 		glDrawArrays(GL_LINES, 0, 2);
 	}
-	for (int i = 0; i < 4; ++i) {
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(i * 9 * sizeof(GLfloat)));
+	if (!draw) {
+		for (int i = 0; i < 4; ++i) {
+			glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+			glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(i * 27 * sizeof(GLfloat)));
+			glEnableVertexAttribArray(PosLocation);
+			glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+			glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(i * 27 * sizeof(GLfloat)));
+			glEnableVertexAttribArray(ColorLocation);
+			if (shape_type[i] == 0)
+			{
+				glLineWidth(4);
+				glDrawArrays(GL_LINES, 0, 2);
+			}
+			else if (shape_type[i] == 1){
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+			}
+			else if (shape_type[i] == 2) {
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+				glDrawArrays(GL_TRIANGLES, 3, 3);
+				glDrawArrays(GL_TRIANGLES, 6, 3);
+			}
+			else if (shape_type[i] == 3) {
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+				glDrawArrays(GL_TRIANGLES, 3, 3);
+				glDrawArrays(GL_TRIANGLES, 6, 3);
+			}
+			else if (shape_type[i] == 4)
+			{
+				glPointSize(5);
+				glDrawArrays(GL_POINTS, 0, 1);
+			}
+		}
+	}
+	else {
+		glBindBuffer(GL_ARRAY_BUFFER, onevbo[0]);
+		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 		glEnableVertexAttribArray(PosLocation);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(i * 9 * sizeof(GLfloat)));
+		glBindBuffer(GL_ARRAY_BUFFER, onevbo[1]);
+		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 		glEnableVertexAttribArray(ColorLocation);
-		if (mode == 1) {
-			glPolygonMode(GL_FRONT, GL_LINE);
+		if (one_shape_type == 0)
+		{
+			glLineWidth(4);
+			glDrawArrays(GL_LINES, 0, 2);
 		}
-		else {
-			glPolygonMode(GL_FRONT, GL_FILL);
+		else if (one_shape_type == 1) {
+			glDrawArrays(GL_TRIANGLES, 0, 3);
 		}
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		else if (one_shape_type == 2) {
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+			glDrawArrays(GL_TRIANGLES, 3, 3);
+			glDrawArrays(GL_TRIANGLES, 6, 3);
+		}
+		else if (one_shape_type == 3) {
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+			glDrawArrays(GL_TRIANGLES, 3, 3);
+			glDrawArrays(GL_TRIANGLES, 6, 3);
+		}
+		else if (one_shape_type == 4)
+		{
+			glPointSize(5);
+			glDrawArrays(GL_POINTS, 0, 1);
+		}
 	}
 	glDisableVertexAttribArray(PosLocation); // Disable 필수!
 	glDisableVertexAttribArray(ColorLocation);
@@ -190,16 +250,246 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 {
 	switch (key) {
 	case 'a':
-		mode = 1;
+		draw = false;
+		reset_setting();
 		break;
-	case 'b':
-		mode = 0;
+	case 'l':
+		draw = true;
+		reset_setting();
+		one_shape_type = shape_type[0];
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 9; ++j) {
+				one_shape[i][j] = shape[0][i][j];
+			}
+		}
+		for (int i = 0; i < 27; ++i) {
+			one_RGB[i] = RGB[0][i];
+		}
+		break;
+	case 't':
+		draw = true;
+		reset_setting();
+		one_shape_type = shape_type[1];
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 9; ++j) {
+				one_shape[i][j] = shape[1][i][j];
+			}
+		}
+		for (int i = 0; i < 27; ++i) {
+			one_RGB[i] = RGB[1][i];
+		}
+		break;
+	case 'r':
+		draw = true;
+		reset_setting();
+		one_shape_type = shape_type[2];
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 9; ++j) {
+				one_shape[i][j] = shape[2][i][j];
+			}
+		}
+		for (int i = 0; i < 27; ++i) {
+			one_RGB[i] = RGB[2][i];
+		}
+		break;
+	case 'p':
+		draw = true;
+		reset_setting();
+		one_shape_type = shape_type[3];
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 9; ++j) {
+				one_shape[i][j] = shape[3][i][j];
+			}
+		}
+		for (int i = 0; i < 27; ++i) {
+			one_RGB[i] = RGB[3][i];
+		}
 		break;
 	}
 	glBindVertexArray(vao);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, 4 * 9 * sizeof(GLfloat), triangle, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, 4 * 9 * sizeof(GLfloat), RGB, GL_STATIC_DRAW);
+	if (draw) {
+		glBindBuffer(GL_ARRAY_BUFFER, onevbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(one_shape), one_shape, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, onevbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(one_RGB), one_RGB, GL_STATIC_DRAW);
+	}
+	else {
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(RGB), RGB, GL_STATIC_DRAW);
+	}
 	glutPostRedisplay();
+}
+
+void reset_setting()
+{
+	{
+		shape_type[0] = 0;
+		{
+			shape[0][0][0] = -0.6f;
+			shape[0][0][1] = 0.3f;
+			shape[0][0][2] = 0.0f;
+
+			shape[0][0][3] = -0.3f;
+			shape[0][0][4] = 0.6f;
+			shape[0][0][5] = 0.0f;
+
+			shape[0][0][6] = -0.45f;
+			shape[0][0][7] = 0.45f;
+			shape[0][0][8] = 0.0f;
+		}
+		{
+			shape[0][1][0] = -0.3f;
+			shape[0][1][1] = 0.6f;
+			shape[0][1][2] = 0.0f;
+
+			shape[0][1][3] = -0.3f;
+			shape[0][1][4] = 0.6f;
+			shape[0][1][5] = 0.0f;
+
+			shape[0][1][6] = -0.3f;
+			shape[0][1][7] = 0.6f;
+			shape[0][1][8] = 0.0f;
+		}
+		{
+			shape[0][2][0] = -0.3f;
+			shape[0][2][1] = 0.6f;
+			shape[0][2][2] = 0.0f;
+
+			shape[0][2][3] = -0.3f;
+			shape[0][2][4] = 0.6f;
+			shape[0][2][5] = 0.0f;
+
+			shape[0][2][6] = -0.45f;
+			shape[0][2][7] = 0.45f;
+			shape[0][2][8] = 0.0f;
+		}
+	}
+	{
+		shape_type[1] = 1;
+		{
+			shape[1][0][0] = 0.3f;
+			shape[1][0][1] = 0.3f;
+			shape[1][0][2] = 0.0f;
+
+			shape[1][0][3] = 0.45f;
+			shape[1][0][4] = 0.6f;
+			shape[1][0][5] = 0.0f;
+
+			shape[1][0][6] = 0.6f;
+			shape[1][0][7] = 0.3f;
+			shape[1][0][8] = 0.0f;
+		}
+		{
+			shape[1][1][0] = 0.45f;
+			shape[1][1][1] = 0.6f;
+			shape[1][1][2] = 0.0f;
+
+			shape[1][1][3] = 0.45f;
+			shape[1][1][4] = 0.6f;
+			shape[1][1][5] = 0.0f;
+
+			shape[1][1][6] = 0.45f;
+			shape[1][1][7] = 0.6f;
+			shape[1][1][8] = 0.0f;
+		}
+		{
+			shape[1][2][0] = 0.45f;
+			shape[1][2][1] = 0.6f;
+			shape[1][2][2] = 0.0f;
+
+			shape[1][2][3] = 0.45f;
+			shape[1][2][4] = 0.6f;
+			shape[1][2][5] = 0.0f;
+
+			shape[1][2][6] = 0.6f;
+			shape[1][2][7] = 0.3f;
+			shape[1][2][8] = 0.0f;
+		}
+	}
+	{
+		shape_type[2] = 2;
+		{
+			shape[2][0][0] = -0.6f;
+			shape[2][0][1] = -0.6f;
+			shape[2][0][2] = 0.0f;
+
+			shape[2][0][3] = -0.6f;
+			shape[2][0][4] = -0.3f;
+			shape[2][0][5] = 0.0f;
+
+			shape[2][0][6] = -0.3f;
+			shape[2][0][7] = -0.6f;
+			shape[2][0][8] = 0.0f;
+		}
+		{
+			shape[2][1][0] = -0.6f;
+			shape[2][1][1] = -0.3f;
+			shape[2][1][2] = 0.0f;
+
+			shape[2][1][3] = -0.45f;
+			shape[2][1][4] = -0.3f;
+			shape[2][1][5] = 0.0f;
+
+			shape[2][1][6] = -0.3f;
+			shape[2][1][7] = -0.3f;
+			shape[2][1][8] = 0.0f;
+		}
+		{
+			shape[2][2][0] = -0.6f;
+			shape[2][2][1] = -0.3f;
+			shape[2][2][2] = 0.0f;
+
+			shape[2][2][3] = -0.3f;
+			shape[2][2][4] = -0.3f;
+			shape[2][2][5] = 0.0f;
+
+			shape[2][2][6] = -0.3f;
+			shape[2][2][7] = -0.6f;
+			shape[2][2][8] = 0.0f;
+		}
+	}
+	{
+		shape_type[3] = 3;
+		{
+			shape[3][0][0] = 0.35f;
+			shape[3][0][1] = -0.6f;
+			shape[3][0][2] = 0.0f;
+
+			shape[3][0][3] = 0.3f;
+			shape[3][0][4] = -0.4f;
+			shape[3][0][5] = 0.0f;
+
+			shape[3][0][6] = 0.55f;
+			shape[3][0][7] = -0.6f;
+			shape[3][0][8] = 0.0f;
+		}
+		{
+			shape[3][1][0] = 0.3f;
+			shape[3][1][1] = -0.4f;
+			shape[3][1][2] = 0.0f;
+
+			shape[3][1][3] = 0.45f;
+			shape[3][1][4] = -0.25f;
+			shape[3][1][5] = 0.0f;
+
+			shape[3][1][6] = 0.6f;
+			shape[3][1][7] = -0.4f;
+			shape[3][1][8] = 0.0f;
+		}
+		{
+			shape[3][2][0] = 0.3f;
+			shape[3][2][1] = -0.4f;
+			shape[3][2][2] = 0.0f;
+
+			shape[3][2][3] = 0.6f;
+			shape[3][2][4] = -0.4f;
+			shape[3][2][5] = 0.0f;
+
+			shape[3][2][6] = 0.55f;
+			shape[3][2][7] = -0.6f;
+			shape[3][2][8] = 0.0f;
+		}
+	}
 }
