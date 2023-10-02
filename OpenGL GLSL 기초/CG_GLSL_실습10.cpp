@@ -233,14 +233,18 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 void circle_spiral(int value)
 {
 	if (angle[value] <= 360 * 3 + 90) {
-		spiral[value][(point_count[value] + 1) * 3] = spiral[value][point_count[value] * 3] + cos(angle[value] * PI / 180) * radius[value];
-		spiral[value][(point_count[value] + 1) * 3 + 1] = spiral[value][point_count[value] * 3 + 1] + sin(angle[value] * PI / 180) * radius[value];
+		//spiral[value][(point_count[value] + 1) * 3] = spiral[value][point_count[value] * 3] + cos(angle[value] * PI / 180) * radius[value];
+		//spiral[value][(point_count[value] + 1) * 3 + 1] = spiral[value][point_count[value] * 3 + 1] + sin(angle[value] * PI / 180) * radius[value];
+		spiral[value][(point_count[value] + 1) * 3] = spiral[value][point_count[value] * 3] + cos(angle[value] * PI / 180) * 0.005f;
+		spiral[value][(point_count[value] + 1) * 3 + 1] = spiral[value][point_count[value] * 3 + 1] + sin(angle[value] * PI / 180) * 0.005f;
 		radius[value] += 0.00005f;
 	}
 	else
 	{
-		spiral[value][(point_count[value] + 1) * 3] = spiral[value][point_count[value] * 3] + sin((angle[value]-90) * PI / 180) * radius[value];
-		spiral[value][(point_count[value] + 1) * 3 + 1] = spiral[value][point_count[value] * 3 + 1] + cos((angle[value] - 90) * PI / 180) * radius[value];
+		//spiral[value][(point_count[value] + 1) * 3] = spiral[value][point_count[value] * 3] + sin((angle[value]-90) * PI / 180) * radius[value];
+		//spiral[value][(point_count[value] + 1) * 3 + 1] = spiral[value][point_count[value] * 3 + 1] + cos((angle[value] - 90) * PI / 180) * radius[value];
+		spiral[value][(point_count[value] + 1) * 3] = spiral[value][point_count[value] * 3] + sin((angle[value] - 90) * PI / 180) * 0.005f;
+		spiral[value][(point_count[value] + 1) * 3 + 1] = spiral[value][point_count[value] * 3 + 1] + cos((angle[value] - 90) * PI / 180) * 0.005f;
 		radius[value] -= 0.00005f;
 	}
 	++point_count[value];
