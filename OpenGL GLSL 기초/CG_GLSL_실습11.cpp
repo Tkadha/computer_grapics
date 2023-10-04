@@ -36,9 +36,9 @@ GLfloat line_RGB[2][6];
 bool draw;
 int shape_type[4];
 int one_shape_type;
-GLfloat add_x;
-GLfloat add_y;
-int count;
+GLfloat add_x[4];
+GLfloat add_y[4];
+int count[4];
 
 std::random_device rd;
 std::mt19937 gen(rd());
@@ -262,6 +262,22 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	case 'a':
 		draw = false;
 		reset_setting();
+		for (int i = 0; i < 4; ++i) {
+			++shape_type[i];
+			count[i] = 0;
+		}
+		--shape_type[3];
+		add_x[0] = abs(shape[0][0][0] - shape[0][0][6]) / 100;
+		add_y[0] = abs(shape[0][0][1] - shape[0][0][7]) / 100;
+		add_x[1] = abs(shape[1][0][0] - shape[1][1][3]) / 100;
+		add_x[2] = abs(shape[2][0][0] - shape[2][0][6]) / 100 / 5;
+		add_y[2] = abs(shape[2][0][1] - shape[2][0][4]) / 100 * 2 / 5;
+		add_x[3] = abs(shape[3][0][3] - shape[3][1][6]) / 100 / 2;
+		add_y[3] = abs(shape[3][0][1] - shape[3][1][4]) / 100 / 2;
+		glutTimerFunc(10, line_to_triangle, 0);
+		glutTimerFunc(10, triangle_to_rectangle, 1);
+		glutTimerFunc(10, rectangle_to_pentagon, 2);
+		glutTimerFunc(10, pentagon_to_point, 3);
 		break;
 	case 'l':
 		draw = true;
@@ -271,13 +287,21 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			for (int j = 0; j < 9; ++j) {
 				one_shape[i][j] = shape[0][i][j];
 			}
+		}	
+		for (int i = 0; i < 3; ++i) {
+			one_shape[i][0] += 0.45f;
+			one_shape[i][3] += 0.45f;
+			one_shape[i][6] += 0.45f;
+			one_shape[i][1] -= 0.45f;
+			one_shape[i][4] -= 0.45f;
+			one_shape[i][7] -= 0.45f;
 		}
 		for (int i = 0; i < 27; ++i) {
 			one_RGB[i] = RGB[0][i];
 		}
-		add_x = abs(one_shape[0][0] - one_shape[0][6]) / 100;
-		add_y = abs(one_shape[0][1] - one_shape[0][7]) / 100;
-		count = 0;
+		add_x[0] = abs(one_shape[0][0] - one_shape[0][6]) / 100;
+		add_y[0] = abs(one_shape[0][1] - one_shape[0][7]) / 100;
+		count[0] = 0;
 		glutTimerFunc(10, line_to_triangle, 0);
 		break;
 	case 't':
@@ -289,11 +313,19 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 				one_shape[i][j] = shape[1][i][j];
 			}
 		}
+		for (int i = 0; i < 3; ++i) {
+			one_shape[i][0] -= 0.45f;
+			one_shape[i][3] -= 0.45f;
+			one_shape[i][6] -= 0.45f;
+			one_shape[i][1] -= 0.45f;
+			one_shape[i][4] -= 0.45f;
+			one_shape[i][7] -= 0.45f;
+		}
 		for (int i = 0; i < 27; ++i) {
 			one_RGB[i] = RGB[1][i];
 		}
-		add_x = abs(one_shape[0][0] - one_shape[1][3]) / 100;
-		count = 0;
+		add_x[1] = abs(one_shape[0][0] - one_shape[1][3]) / 100;
+		count[1] = 0;
 		glutTimerFunc(10, triangle_to_rectangle, 1);
 		break;
 	case 'r':
@@ -308,9 +340,17 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		for (int i = 0; i < 27; ++i) {
 			one_RGB[i] = RGB[2][i];
 		}
-		add_x = abs(one_shape[0][0] - one_shape[0][6]) / 100 / 5;
-		add_y = abs(one_shape[0][1] - one_shape[0][4]) / 100 * 2 / 5;
-		count = 0;
+		for (int i = 0; i < 3; ++i) {
+			one_shape[i][0] += 0.45f;
+			one_shape[i][3] += 0.45f;
+			one_shape[i][6] += 0.45f;
+			one_shape[i][1] += 0.45f;
+			one_shape[i][4] += 0.45f;
+			one_shape[i][7] += 0.45f;
+		}
+		add_x[2] = abs(one_shape[0][0] - one_shape[0][6]) / 100 / 5;
+		add_y[2] = abs(one_shape[0][1] - one_shape[0][4]) / 100 * 2 / 5;
+		count[2] = 0;
 		glutTimerFunc(10, rectangle_to_pentagon, 2);
 		break;
 	case 'p':
@@ -322,12 +362,20 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 				one_shape[i][j] = shape[3][i][j];
 			}
 		}
+		for (int i = 0; i < 3; ++i) {
+			one_shape[i][0] -= 0.45f;
+			one_shape[i][3] -= 0.45f;
+			one_shape[i][6] -= 0.45f;
+			one_shape[i][1] += 0.45f;
+			one_shape[i][4] += 0.45f;
+			one_shape[i][7] += 0.45f;
+		}
 		for (int i = 0; i < 27; ++i) {
 			one_RGB[i] = RGB[3][i];
 		}
-		add_x = abs(one_shape[0][3] - one_shape[1][6]) / 100 / 2;
-		add_y = abs(one_shape[0][1] - one_shape[1][4]) / 100 / 2;
-		count = 0;
+		add_x[3] = abs(one_shape[0][3] - one_shape[1][6]) / 100 / 2;
+		add_y[3] = abs(one_shape[0][1] - one_shape[1][4]) / 100 / 2;
+		count[3] = 0;
 		glutTimerFunc(10, pentagon_to_point, 3);
 		break;
 	}
@@ -349,6 +397,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 void reset_setting()
 {
 	for (int i = 0; i < 4; ++i) {
+		count[i] = 0;
 		RGB[i][24] = RGB[i][21] = RGB[i][18] = RGB[i][15] = RGB[i][12] = RGB[i][9] = RGB[i][6] = RGB[i][3] = RGB[i][0] = dist(gen);
 		RGB[i][25] = RGB[i][22] = RGB[i][19] = RGB[i][16] = RGB[i][13] = RGB[i][10] = RGB[i][7] = RGB[i][4] = RGB[i][1] = dist(gen);
 		RGB[i][26] = RGB[i][23] = RGB[i][20] = RGB[i][17] = RGB[i][14] = RGB[i][11] = RGB[i][8] = RGB[i][5] = RGB[i][2] = dist(gen);
@@ -523,120 +572,178 @@ void reset_setting()
 	}
 }
 void line_to_triangle(int value) {
-	{	//4
-		one_shape[0][6] += add_x;
-		one_shape[0][7] -= add_y;
-		one_shape[2][6] += add_x;
-		one_shape[2][7] -= add_y;
-	}
-	{	//1
-		one_shape[0][3] -= add_x;
-		one_shape[1][0] -= add_x;
-		one_shape[2][0] -= add_x;
-	}
-	{	//2
-		one_shape[1][3] -= add_x;
-	}
-	{	//3
-		one_shape[1][6] -= add_x;
-		one_shape[2][3] -= add_x;
-	}
-	count++;
-	glBindBuffer(GL_ARRAY_BUFFER, onevbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(one_shape), one_shape, GL_DYNAMIC_DRAW);
-	glutPostRedisplay();
-	if (count < 100)
+	if (draw)
 	{
-		glutTimerFunc(10, line_to_triangle, 0);
+		//4
+		one_shape[0][6] += add_x[0];
+		one_shape[0][7] -= add_y[0];
+		one_shape[2][6] += add_x[0];
+		one_shape[2][7] -= add_y[0];
+		//1
+		one_shape[0][3] -= add_x[0];
+		one_shape[1][0] -= add_x[0];
+		one_shape[2][0] -= add_x[0];
+		//2
+		one_shape[1][3] -= add_x[0];
+		//3
+		one_shape[1][6] -= add_x[0];
+		one_shape[2][3] -= add_x[0];
+		glBindBuffer(GL_ARRAY_BUFFER, onevbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(one_shape), one_shape, GL_DYNAMIC_DRAW);
 	}
 	else {
-		count = 0;
+		//4
+		shape[value][0][6] += add_x[0];
+		shape[value][0][7] -= add_y[0];
+		shape[value][2][6] += add_x[0];
+		shape[value][2][7] -= add_y[0];
+		//1
+		shape[value][0][3] -= add_x[0];
+		shape[value][1][0] -= add_x[0];
+		shape[value][2][0] -= add_x[0];
+		//2
+		shape[value][1][3] -= add_x[0];
+		//3
+		shape[value][1][6] -= add_x[0];
+		shape[value][2][3] -= add_x[0];
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
+	}
+	count[0]++;
+	glutPostRedisplay();
+	if (count[0] < 100)
+	{
+			glutTimerFunc(10, line_to_triangle, 0);
+	}
+	else {
+		count[0] = 0;
 	}
 }
 void triangle_to_rectangle(int value) {
+	if(draw)
 	{	//1
-		one_shape[0][3] -= add_x;
-		one_shape[1][0] -= add_x;
-		one_shape[2][0] -= add_x;
-	}
-	{	//3
-		one_shape[1][6] += add_x;
-		one_shape[2][3] += add_x;
-	}
-	count++;
-	glBindBuffer(GL_ARRAY_BUFFER, onevbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(one_shape), one_shape, GL_DYNAMIC_DRAW);
-	glutPostRedisplay();
-	if (count < 100)
-	{
-		glutTimerFunc(10, triangle_to_rectangle, 1);
+		one_shape[0][3] -= add_x[1];
+		one_shape[1][0] -= add_x[1];
+		one_shape[2][0] -= add_x[1];
+		//3
+		one_shape[1][6] += add_x[1];
+		one_shape[2][3] += add_x[1];
+		glBindBuffer(GL_ARRAY_BUFFER, onevbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(one_shape), one_shape, GL_DYNAMIC_DRAW);
 	}
 	else {
-		count = 0;
+		//1
+		shape[value][0][3] -= add_x[1];
+		shape[value][1][0] -= add_x[1];
+		shape[value][2][0] -= add_x[1];
+		//3
+		shape[value][1][6] += add_x[1];
+		shape[value][2][3] += add_x[1];
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
+	}
+	count[1]++;
+	glutPostRedisplay();
+	if (count[1] < 100)
+	{
+			glutTimerFunc(10, triangle_to_rectangle, 1);
+	}
+	else {
+		count[1] = 0;
 	}
 }
 void rectangle_to_pentagon(int value) {
-	{	//0
-		one_shape[0][0] += add_x;
-	}
-	{	//1
-		one_shape[0][4] -= add_y;
-		one_shape[1][1] -= add_y;
-		one_shape[2][1] -= add_y;
-	}
-	
-	{	//3
-		one_shape[1][7] -= add_y;
-		one_shape[2][4] -= add_y;
-	}
-	{	//4
-		one_shape[0][6] -= add_x;
-		one_shape[2][6] -= add_x;
-	}
-	count++;
-	glBindBuffer(GL_ARRAY_BUFFER, onevbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(one_shape), one_shape, GL_DYNAMIC_DRAW);
-	glutPostRedisplay();
-	if (count < 100)
-	{
-		glutTimerFunc(10, rectangle_to_pentagon, 2);
+	if (draw){	
+		//0
+		one_shape[0][0] += add_x[2];
+		//1
+		one_shape[0][4] -= add_y[2];
+		one_shape[1][1] -= add_y[2];
+		one_shape[2][1] -= add_y[2];
+		//3
+		one_shape[1][7] -= add_y[2];
+		one_shape[2][4] -= add_y[2];
+		//4
+		one_shape[0][6] -= add_x[2];
+		one_shape[2][6] -= add_x[2];
+		glBindBuffer(GL_ARRAY_BUFFER, onevbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(one_shape), one_shape, GL_DYNAMIC_DRAW);
 	}
 	else {
-		count = 0;
+		//0
+		shape[value][0][0] += add_x[2];
+		//1
+		shape[value][0][4] -= add_y[2];
+		shape[value][1][1] -= add_y[2];
+		shape[value][2][1] -= add_y[2];
+		//3
+		shape[value][1][7] -= add_y[2];
+		shape[value][2][4] -= add_y[2];
+		//4
+		shape[value][0][6] -= add_x[2];
+		shape[value][2][6] -= add_x[2];
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
+	}
+	count[2]++;
+	glutPostRedisplay();
+	if (count[2] < 100)
+	{
+			glutTimerFunc(10, rectangle_to_pentagon, 2);
+	}
+	else {
+		count[2] = 0;
 	}
 }
 void pentagon_to_point(int value) {
-	{	//0
-		one_shape[0][0] += 7*add_x/11;
-		one_shape[0][1] += add_y;
+	if (draw){	//0
+		one_shape[0][0] += 7*add_x[3]/11;
+		one_shape[0][1] += add_y[3];
+		//1
+		one_shape[0][3] += add_x[3];
+		one_shape[1][0] += add_x[3];
+		one_shape[2][0] += add_x[3];
+		//2
+		one_shape[1][4] -= add_y[3];
+		//3
+		one_shape[1][6] -= add_x[3];
+		one_shape[2][3] -= add_x[3];
+		//4
+		one_shape[0][6] -= 7*add_x[3]/11;
+		one_shape[2][6] -= 7*add_x[3]/11;
+		one_shape[0][7] += add_y[3];
+		one_shape[2][7] += add_y[3];
+		glBindBuffer(GL_ARRAY_BUFFER, onevbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(one_shape), one_shape, GL_DYNAMIC_DRAW);
 	}
-	{	//1
-		one_shape[0][3] += add_x;
-		one_shape[1][0] += add_x;
-		one_shape[2][0] += add_x;
+	else {
+		//0
+		shape[value][0][0] += 7 * add_x[3] / 11;
+		shape[value][0][1] += add_y[3];
+		//1
+		shape[value][0][3] += add_x[3];
+		shape[value][1][0] += add_x[3];
+		shape[value][2][0] += add_x[3];
+		//2
+		shape[value][1][4] -= add_y[3];
+		//3
+		shape[value][1][6] -= add_x[3];
+		shape[value][2][3] -= add_x[3];
+		//4
+		shape[value][0][6] -= 7 * add_x[3] / 11;
+		shape[value][2][6] -= 7 * add_x[3] / 11;
+		shape[value][0][7] += add_y[3];
+		shape[value][2][7] += add_y[3];
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
 	}
-	{	//2
-		one_shape[1][4] -= add_y;
-	}
-	{	//3
-		one_shape[1][6] -= add_x;
-		one_shape[2][3] -= add_x;
-	}
-	{	//4
-		one_shape[0][6] -= 7*add_x/11;
-		one_shape[2][6] -= 7*add_x/11;
-		one_shape[0][7] += add_y;
-		one_shape[2][7] += add_y;
-	}
-	count++;
-	glBindBuffer(GL_ARRAY_BUFFER, onevbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(one_shape), one_shape, GL_DYNAMIC_DRAW);
+	count[3]++;
 	glutPostRedisplay();
-	if (count < 90)
+	if (count[3] < 90)
 	{
 		glutTimerFunc(10, pentagon_to_point, 3);
 	}
 	else {
-		count = 0;
+		count[3] = 0;
 	}
 }

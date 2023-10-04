@@ -77,6 +77,7 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 			glDrawArrays(GL_POINTS, 0, 1); //--- 렌더링하기: 0번 인덱스에서 1개의 버텍스를 사용하여 점 그리기
 			break;
 		case 1:	// 선
+			glLineWidth(4);
 			glDrawArrays(GL_LINES, 0, 2);
 			break;
 		case 2:	// 삼각형
