@@ -4,7 +4,6 @@
 #include <gl/freeglut.h>
 #include <gl/freeglut_ext.h>
 #include <stdlib.h>
-#include <random>
 //-----------------------------------
 // 마우스 클릭한 좌표를 기점으로 마우스의 x값 큰 x값을 가진 점들과 연결되있는 점을 찾는다.
 // 비율로 계산하여 각각 점의 x값에서 마우스의 x값을 뺀 절댓값이 a : b 라면 점 하나에서 a: b 비율로 y좌표를 넣고
@@ -22,6 +21,7 @@ GLvoid Reshape(int w, int h);
 char* filetobuf(const char* file);
 void Mouse(int, int, int, int);
 void move(int, int);
+void checkcrash(GLfloat, GLfloat);
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID;
@@ -168,32 +168,32 @@ char* filetobuf(const char* file)
 	return buf; // Return the buffer
 }
 GLfloat px[5], py[5];
+int crash;
+bool check;
 void Mouse(int button, int state, int x, int y)
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<> dist(0, 1);
 	GLfloat halfx = Width / 2;
 	GLfloat halfy = Height / 2;
 	GLclampf mousex = (x - halfx) / halfx;
 	GLclampf mousey = 1 - (y / halfy);
 	if (state == GLUT_DOWN) {
 		if (button == GLUT_LEFT_BUTTON) {
-			if ((point[0][0] <= mousex) && (point[1][0] >= mousex)) {
-				if ((point[0][1] >= mousey) && (point[2][1] <= mousey)) {
-					rectmove = true;
-					for (int i = 0; i < 5; ++i) {
-						px[i] = abs(mousex - point[i][0]);
-						py[i] = abs(mousey - point[i][1]);
-					}
-				}
-			}
-			for (int i = 0; i < 4; ++i) {
+			for (int i = 0; i < 5; ++i) {
 				if ((point[i][0] - 0.05f <= mousex) && (point[i][0] + 0.05f >= mousex)) {
 					if ((point[i][1] - 0.05f <= mousey) && (point[i][1] + 0.05f >= mousey)) {
 						mousepoint[i] = true;
-						rectmove = false;
+						check = true;
 						break;
+					}
+				}
+			}
+			if (!check) {
+				checkcrash(mousex, mousey);
+				if (crash % 2 == 1) {
+					rectmove = true;
+					for (int i = 0; i < 5; ++i) {
+						px[i] = mousex - point[i][0];
+						py[i] = mousey - point[i][1];
 					}
 				}
 			}
@@ -206,6 +206,7 @@ void Mouse(int button, int state, int x, int y)
 				if ((point[i][0] - 0.01f <= mousex) && (point[i][0] + 0.01f >= mousex)) {
 					if ((point[i][1] - 0.01f <= mousey) && (point[i][1] + 0.01f >= mousey)) {
 						mousepoint[i] = false;
+						check = false;
 					}
 				}
 			}
@@ -219,20 +220,10 @@ void move(int x, int y) {
 	GLclampf mousex = (x - halfx) / halfx;
 	GLclampf mousey = 1 - (y / halfy);
 	if (rectmove) {
-		point[0][0] = mousex - px[0];
-		point[0][1] = mousey + py[0];
-
-		point[4][0] = mousex - px[4];
-		point[4][1] = mousey + py[4];
-
-		point[1][0] = mousex + px[1];
-		point[1][1] = mousey + py[1];
-
-		point[2][0] = mousex + px[2];
-		point[2][1] = mousey - py[2];
-
-		point[3][0] = mousex - px[3];
-		point[3][1] = mousey - py[3];
+		for (int i = 0; i < 5; ++i) {
+			point[i][0] = - px[i] + mousex;
+			point[i][1] = - py[i] + mousey;
+		}
 	}
 	else {
 		for (int i = 0; i < 4; ++i) {
@@ -249,4 +240,22 @@ void move(int x, int y) {
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(point), point, GL_DYNAMIC_DRAW);
 	glutPostRedisplay();
+}
+
+void checkcrash(GLfloat mx, GLfloat my) {
+	crash = 0;
+	GLfloat slope[4];
+	GLfloat maxpoint[4];
+	for (int i = 0; i < 4; ++i) {
+		slope[i] = (point[i + 1][1] - point[i][1]) / (point[i + 1][0] - point[i][0]);
+
+		if (point[i + 1][0] > point[i][0]) 
+			maxpoint[i] = point[i + 1][0];
+		else
+			maxpoint[i] = point[i][0];
+
+		if ((mx <= (my - point[i][1]) / slope[i] + point[i][0]) && (maxpoint[i] >= (my - point[i][1]) / slope[i] + point[i][0])) {
+			++crash;
+		}
+	}
 }
