@@ -4,13 +4,7 @@
 #include <gl/freeglut.h>
 #include <gl/freeglut_ext.h>
 #include <stdlib.h>
-//-----------------------------------
-// 마우스 클릭한 좌표를 기점으로 마우스의 x값 큰 x값을 가진 점들과 연결되있는 점을 찾는다.
-// 비율로 계산하여 각각 점의 x값에서 마우스의 x값을 뺀 절댓값이 a : b 라면 점 하나에서 a: b 비율로 y좌표를 넣고
-// 마우스의 y값과 같으면 count 를 1 증가 시킨다.
-// count가 짝수면 사각형 외부, 홀수 면 사각형 내부이다
-//
-//
+
 #define Width 800
 #define Height 600
 void make_vertexShaders();

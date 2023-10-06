@@ -9,13 +9,16 @@
 #define Width 1200
 #define Height 800
 
-void Setting();
 void make_vertexShaders();
 void make_fragmentShaders();
 void make_shaderProgram();
 GLvoid drawScene();
 GLvoid Reshape(int w, int h);
 char* filetobuf(const char* file);
+void Mouse(int, int, int, int);
+void move(int, int);
+void Setting();
+
 
 
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
@@ -28,7 +31,7 @@ int shape_type[15];
 
 std::random_device rd;
 std::mt19937 gen(rd());
-std::uniform_real_distribution<> dist(-1, 1);
+std::uniform_real_distribution<> dist(-0.9, 0.9);
 std::uniform_real_distribution<> color(0, 1);
 
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
@@ -53,6 +56,8 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	//--- 세이더 읽어와서 세이더 프로그램 만들기
 	glutDisplayFunc(drawScene); //--- 출력 콜백 함수
 	glutReshapeFunc(Reshape);
+	glutMouseFunc(Mouse);
+	glutMotionFunc(move);
 	glutMainLoop();
 }
 
@@ -72,13 +77,11 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	for (int i = 0; i < 15; ++i) {
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(i * 15 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(PosLocation);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(i * 15 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(ColorLocation);
 		switch(shape_type[i]) {
 		case 0:
-			glPointSize(7);
+			glPointSize(10);
 			glDrawArrays(GL_POINTS, 0, 1);
 			break;
 		case 1:
@@ -176,6 +179,128 @@ char* filetobuf(const char* file)
 	fclose(fptr); // Close the file
 	buf[length] = 0; // Null terminator
 	return buf; // Return the buffer
+}
+int select_shape;
+int select_shape_type;
+bool select;
+GLfloat slope_point2;
+void Mouse(int button, int state, int x, int y)
+{
+	GLfloat halfx = Width / 2;
+	GLfloat halfy = Height / 2;
+	GLclampf mousex = (x - halfx) / halfx;
+	GLclampf mousey = 1 - (y / halfy);
+	if (state == GLUT_DOWN) {
+		if (button == GLUT_LEFT_BUTTON) {
+			for (int i = 0; i < 15; ++i) {
+				switch (shape_type[i]) {
+				case 0:
+					if ((mousex >= shape[i][0][0] - 0.03f) && (mousex <= shape[i][0][0] + 0.03f)) {
+						if ((mousey >= shape[i][0][1] - 0.03f) && (mousey <= shape[i][0][1] + 0.03f)) {
+							select_shape = i;
+							select = true;
+							select_shape_type = 0;
+						}
+					}
+					break;
+				case 1:
+					if ((mousey - shape[i][0][1] >= mousex - shape[i][0][0]-0.03f)&&(mousey - shape[i][0][1] <= mousex - shape[i][0][0] + 0.03f)) {
+						select_shape = i;
+						select = true;
+						select_shape_type = 1;
+					}
+					break;
+				case 2:
+					if ((mousex >= shape[i][0][0]) && (mousex <= shape[i][0][0] + 0.1f)) {
+						if ((mousey >= shape[i][0][1]) && (mousey <= shape[i][0][1] + 0.1f)) {
+							select_shape = i;
+							select = true;
+							select_shape_type = 2;
+						}
+					}
+					break;
+				case 3:
+					if ((mousex >= shape[i][0][0]) && (mousex <= shape[i][0][0] + 0.1f)) {
+						if ((mousey >= shape[i][0][1]) && (mousey <= shape[i][0][1] + 0.1f)) {
+							select_shape = i;
+							select = true;
+							select_shape_type = 3;
+						}
+					}
+					break;
+				case 4:
+					if ((mousex >= shape[i][0][0]) && (mousex <= shape[i][0][0] + 0.08f)) {
+						if ((mousey >= shape[i][0][1]) && (mousey <= shape[i][0][1] + 0.08f)) {
+							select_shape = i;
+							select = true;
+							select_shape_type = 4;
+						}
+					}
+					break;
+				}
+				if (select)
+					break;
+			}
+		}
+	}
+	else if (state == GLUT_UP) {
+		if (button == GLUT_LEFT_BUTTON) {
+			select = false;
+		}
+	}
+	glutPostRedisplay();
+}
+void move(int x, int y) {
+	GLfloat halfx = Width / 2;
+	GLfloat halfy = Height / 2;
+	GLclampf mousex = (x - halfx) / halfx;
+	GLclampf mousey = 1 - (y / halfy);
+
+	switch (select_shape_type) {
+	case 0:
+		shape[select_shape][0][0] = mousex;
+		shape[select_shape][0][1] = mousey;
+		break;
+	case 1:
+		shape[select_shape][0][0] = mousex-0.05f;
+		shape[select_shape][0][1] = mousey-0.05f;
+		shape[select_shape][1][0] = shape[select_shape][0][0] + 0.1f;
+		shape[select_shape][1][1] = shape[select_shape][0][1] + 0.1f;
+		break;
+	case 2:
+		shape[select_shape][0][0] = mousex-0.05f;
+		shape[select_shape][0][1] = mousey-0.05f;
+		shape[select_shape][1][0] = mousex + 0.05f;
+		shape[select_shape][1][1] = mousey - 0.05f;
+		shape[select_shape][2][0] = mousex;
+		shape[select_shape][2][1] = mousey + 0.05f;
+		break;
+	case 3:
+		shape[select_shape][0][0] = mousex-0.05f;
+		shape[select_shape][0][1] = mousey-0.05f;
+		shape[select_shape][1][0] = mousex+0.05f;
+		shape[select_shape][1][1] = mousey-0.05f;
+		shape[select_shape][2][0] = mousex+0.05f;
+		shape[select_shape][2][1] = mousey+0.05f;
+		shape[select_shape][3][0] = mousex-0.05f;
+		shape[select_shape][3][1] = mousey+0.05f;
+		break;
+	case 4:
+		shape[select_shape][0][0] = mousex - 0.03f;
+		shape[select_shape][0][1] = mousey - 0.04f;
+		shape[select_shape][1][0] = shape[select_shape][0][0] + 0.06f;
+		shape[select_shape][1][1] = shape[select_shape][0][1];
+		shape[select_shape][2][0] = shape[select_shape][0][0] + 0.08f;
+		shape[select_shape][2][1] = shape[select_shape][0][1] + 0.06f;
+		shape[select_shape][3][0] = shape[select_shape][0][0] + 0.03f;
+		shape[select_shape][3][1] = shape[select_shape][0][1] + 0.1f;
+		shape[select_shape][4][0] = shape[select_shape][0][0] - 0.02f;
+		shape[select_shape][4][1] = shape[select_shape][0][1] + 0.06f;
+		break;
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
+	glutPostRedisplay();
 }
 void Setting()
 {
