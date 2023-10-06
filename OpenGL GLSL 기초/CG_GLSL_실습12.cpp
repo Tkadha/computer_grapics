@@ -18,8 +18,8 @@ char* filetobuf(const char* file);
 void Mouse(int, int, int, int);
 void move(int, int);
 void Setting();
-
-
+void diagonal(int value);
+void bump(int,GLfloat,GLfloat);
 
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
@@ -28,6 +28,7 @@ GLuint vao, vbo[2];
 GLfloat shape[15][5][3];
 GLfloat RGB[15][15];
 int shape_type[15];
+GLfloat diag[15][2];
 
 std::random_device rd;
 std::mt19937 gen(rd());
@@ -45,6 +46,9 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glewExperimental = GL_TRUE;
 	glewInit();
 	make_shaderProgram();
+	for (int i = 0; i < 15; ++i)
+		for (int j = 0; j < 2; ++j)
+			diag[i][j] = 0.005f;
 	Setting();
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(2, vbo);
@@ -64,7 +68,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 {
 	GLfloat rColor, gColor, bColor;
-	rColor = gColor = bColor = 0.5;
+	rColor = gColor = bColor = 1.0f;
 	glClearColor(rColor, gColor, bColor, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glUseProgram(shaderProgramID);
@@ -96,6 +100,8 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 			break;
 		case 4:
 			glDrawArrays(GL_TRIANGLE_FAN, 0, 5);
+			break;
+		default:
 			break;
 		}
 	}
@@ -182,7 +188,9 @@ char* filetobuf(const char* file)
 }
 int select_shape;
 int select_shape_type;
-bool select;
+bool select[15];
+bool ontimer[15];
+bool playtimer[15];
 GLfloat slope_point2;
 void Mouse(int button, int state, int x, int y)
 {
@@ -198,7 +206,7 @@ void Mouse(int button, int state, int x, int y)
 					if ((mousex >= shape[i][0][0] - 0.03f) && (mousex <= shape[i][0][0] + 0.03f)) {
 						if ((mousey >= shape[i][0][1] - 0.03f) && (mousey <= shape[i][0][1] + 0.03f)) {
 							select_shape = i;
-							select = true;
+							select[i] = true;
 							select_shape_type = 0;
 						}
 					}
@@ -206,7 +214,7 @@ void Mouse(int button, int state, int x, int y)
 				case 1:
 					if ((mousey - shape[i][0][1] >= mousex - shape[i][0][0]-0.03f)&&(mousey - shape[i][0][1] <= mousex - shape[i][0][0] + 0.03f)) {
 						select_shape = i;
-						select = true;
+						select[i] = true;
 						select_shape_type = 1;
 					}
 					break;
@@ -214,7 +222,7 @@ void Mouse(int button, int state, int x, int y)
 					if ((mousex >= shape[i][0][0]) && (mousex <= shape[i][0][0] + 0.1f)) {
 						if ((mousey >= shape[i][0][1]) && (mousey <= shape[i][0][1] + 0.1f)) {
 							select_shape = i;
-							select = true;
+							select[i] = true;
 							select_shape_type = 2;
 						}
 					}
@@ -223,7 +231,7 @@ void Mouse(int button, int state, int x, int y)
 					if ((mousex >= shape[i][0][0]) && (mousex <= shape[i][0][0] + 0.1f)) {
 						if ((mousey >= shape[i][0][1]) && (mousey <= shape[i][0][1] + 0.1f)) {
 							select_shape = i;
-							select = true;
+							select[i] = true;
 							select_shape_type = 3;
 						}
 					}
@@ -232,71 +240,81 @@ void Mouse(int button, int state, int x, int y)
 					if ((mousex >= shape[i][0][0]) && (mousex <= shape[i][0][0] + 0.08f)) {
 						if ((mousey >= shape[i][0][1]) && (mousey <= shape[i][0][1] + 0.08f)) {
 							select_shape = i;
-							select = true;
+							select[i] = true;
 							select_shape_type = 4;
 						}
 					}
 					break;
 				}
-				if (select)
+				if (select[select_shape])
 					break;
 			}
 		}
 	}
 	else if (state == GLUT_UP) {
 		if (button == GLUT_LEFT_BUTTON) {
-			select = false;
+			select[select_shape] = false;
+			for (int i = 0; i < 15; ++i) {
+				if(i!= select_shape)
+					bump(i,mousex,mousey);
+			}
+			for (int i = 0; i < 15; ++i) {
+				if (ontimer[i])
+					if(!playtimer[i])
+						if(shape_type[i]!=10)
+							glutTimerFunc(50, diagonal, i);
+			}
 		}
 	}
-	glutPostRedisplay();
 }
 void move(int x, int y) {
 	GLfloat halfx = Width / 2;
 	GLfloat halfy = Height / 2;
 	GLclampf mousex = (x - halfx) / halfx;
 	GLclampf mousey = 1 - (y / halfy);
-
-	switch (select_shape_type) {
-	case 0:
-		shape[select_shape][0][0] = mousex;
-		shape[select_shape][0][1] = mousey;
-		break;
-	case 1:
-		shape[select_shape][0][0] = mousex-0.05f;
-		shape[select_shape][0][1] = mousey-0.05f;
-		shape[select_shape][1][0] = shape[select_shape][0][0] + 0.1f;
-		shape[select_shape][1][1] = shape[select_shape][0][1] + 0.1f;
-		break;
-	case 2:
-		shape[select_shape][0][0] = mousex-0.05f;
-		shape[select_shape][0][1] = mousey-0.05f;
-		shape[select_shape][1][0] = mousex + 0.05f;
-		shape[select_shape][1][1] = mousey - 0.05f;
-		shape[select_shape][2][0] = mousex;
-		shape[select_shape][2][1] = mousey + 0.05f;
-		break;
-	case 3:
-		shape[select_shape][0][0] = mousex-0.05f;
-		shape[select_shape][0][1] = mousey-0.05f;
-		shape[select_shape][1][0] = mousex+0.05f;
-		shape[select_shape][1][1] = mousey-0.05f;
-		shape[select_shape][2][0] = mousex+0.05f;
-		shape[select_shape][2][1] = mousey+0.05f;
-		shape[select_shape][3][0] = mousex-0.05f;
-		shape[select_shape][3][1] = mousey+0.05f;
-		break;
-	case 4:
-		shape[select_shape][0][0] = mousex - 0.03f;
-		shape[select_shape][0][1] = mousey - 0.04f;
-		shape[select_shape][1][0] = shape[select_shape][0][0] + 0.06f;
-		shape[select_shape][1][1] = shape[select_shape][0][1];
-		shape[select_shape][2][0] = shape[select_shape][0][0] + 0.08f;
-		shape[select_shape][2][1] = shape[select_shape][0][1] + 0.06f;
-		shape[select_shape][3][0] = shape[select_shape][0][0] + 0.03f;
-		shape[select_shape][3][1] = shape[select_shape][0][1] + 0.1f;
-		shape[select_shape][4][0] = shape[select_shape][0][0] - 0.02f;
-		shape[select_shape][4][1] = shape[select_shape][0][1] + 0.06f;
-		break;
+	if (select[select_shape]) {
+		switch (select_shape_type) {
+		case 0:
+			shape[select_shape][0][0] = mousex;
+			shape[select_shape][0][1] = mousey;
+			break;
+		case 1:
+			shape[select_shape][0][0] = mousex - 0.05f;
+			shape[select_shape][0][1] = mousey - 0.05f;
+			shape[select_shape][1][0] = shape[select_shape][0][0] + 0.1f;
+			shape[select_shape][1][1] = shape[select_shape][0][1] + 0.1f;
+			break;
+		case 2:
+			shape[select_shape][0][0] = mousex - 0.05f;
+			shape[select_shape][0][1] = mousey - 0.05f;
+			shape[select_shape][1][0] = mousex + 0.05f;
+			shape[select_shape][1][1] = mousey - 0.05f;
+			shape[select_shape][2][0] = mousex;
+			shape[select_shape][2][1] = mousey + 0.05f;
+			break;
+		case 3:
+			shape[select_shape][0][0] = mousex - 0.05f;
+			shape[select_shape][0][1] = mousey - 0.05f;
+			shape[select_shape][1][0] = mousex + 0.05f;
+			shape[select_shape][1][1] = mousey - 0.05f;
+			shape[select_shape][2][0] = mousex + 0.05f;
+			shape[select_shape][2][1] = mousey + 0.05f;
+			shape[select_shape][3][0] = mousex - 0.05f;
+			shape[select_shape][3][1] = mousey + 0.05f;
+			break;
+		case 4:
+			shape[select_shape][0][0] = mousex - 0.03f;
+			shape[select_shape][0][1] = mousey - 0.04f;
+			shape[select_shape][1][0] = shape[select_shape][0][0] + 0.06f;
+			shape[select_shape][1][1] = shape[select_shape][0][1];
+			shape[select_shape][2][0] = shape[select_shape][0][0] + 0.08f;
+			shape[select_shape][2][1] = shape[select_shape][0][1] + 0.06f;
+			shape[select_shape][3][0] = shape[select_shape][0][0] + 0.03f;
+			shape[select_shape][3][1] = shape[select_shape][0][1] + 0.1f;
+			shape[select_shape][4][0] = shape[select_shape][0][0] - 0.02f;
+			shape[select_shape][4][1] = shape[select_shape][0][1] + 0.06f;
+			break;
+		}
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
@@ -355,4 +373,375 @@ void Setting()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(RGB), RGB, GL_STATIC_DRAW);
+}
+
+void diagonal(int value) {
+	playtimer[value] = true;
+	for (int i = 0; i < 5; ++i) {
+		shape[value][i][0] += diag[value][0];
+		shape[value][i][1] += diag[value][1];
+	}
+	switch (shape_type[value]) {
+	case 0:
+		if (shape[value][0][0] >= 1)
+		{
+			if (diag[value][0] > 0)
+				diag[value][0] *= -1;
+		}
+		else if (shape[value][0][0] <= -1)
+		{
+			if (diag[value][0] < 0)
+				diag[value][0] *= -1;
+		}
+		if (shape[value][0][1] >= 1)
+		{
+			if (diag[value][1] > 0)
+				diag[value][1] *= -1;
+		}
+		else if (shape[value][0][1] <= -1)
+		{
+			if (diag[value][1] < 0)
+				diag[value][1] *= -1;
+		}
+		break;
+	case 1:
+		if ((shape[value][0][0] >= 1) || (shape[value][1][0] >= 1))
+		{
+			if (diag[value][0] > 0)
+				diag[value][0] *= -1;
+		}
+		else if ((shape[value][0][0] <= -1) || (shape[value][1][0] <= -1))
+		{
+			if (diag[value][0] < 0)
+				diag[value][0] *= -1;
+		}
+		if ((shape[value][0][1] >= 1) || (shape[value][1][1] >= 1))
+		{
+			if (diag[value][1] > 0)
+				diag[value][1] *= -1;
+		}
+		else if ((shape[value][0][1] <= -1) || (shape[value][1][1] <= -1))
+		{
+			if (diag[value][1] < 0)
+				diag[value][1] *= -1;
+		}
+		break;
+	case 2:
+		if ((shape[value][0][0] >= 1) || (shape[value][1][0] >= 1) || (shape[value][2][0] >= 1))
+		{
+			if (diag[value][0] > 0)
+				diag[value][0] *= -1;
+		}
+		else if ((shape[value][0][0] <= -1) || (shape[value][1][0] <= -1) || (shape[value][2][0] <= -1))
+		{
+			if (diag[value][0] < 0)
+				diag[value][0] *= -1;
+		}
+		if ((shape[value][0][1] >= 1) || (shape[value][1][1] >= 1) || (shape[value][2][1] >= 1))
+		{
+			if (diag[value][1] > 0)
+				diag[value][1] *= -1;
+		}
+		else if ((shape[value][0][1] <= -1) || (shape[value][1][1] <= -1) || (shape[value][2][1] <= -1))
+		{
+			if (diag[value][1] < 0)
+				diag[value][1] *= -1;
+		}
+		break;
+	case 3:
+		if ((shape[value][0][0] >= 1) || (shape[value][1][0] >= 1) || (shape[value][2][0] >= 1) || (shape[value][3][0] >= 1))
+		{
+			if (diag[value][0] > 0)
+				diag[value][0] *= -1;
+		}
+		else if ((shape[value][0][0] <= -1) || (shape[value][1][0] <= -1) || (shape[value][2][0] <= -1) || (shape[value][3][0] <= -1))
+		{
+			if (diag[value][0] < 0)
+				diag[value][0] *= -1;
+		}
+		if ((shape[value][0][1] >= 1) || (shape[value][1][1] >= 1) || (shape[value][2][1] >= 1) || (shape[value][3][1] >= 1))
+		{
+			if (diag[value][1] > 0)
+				diag[value][1] *= -1;
+		}
+		else if ((shape[value][0][1] <= -1) || (shape[value][1][1] <= -1) || (shape[value][2][1] <= -1) || (shape[value][3][1] <= -1))
+		{
+			if (diag[value][1] < 0)
+				diag[value][1] *= -1;
+		}
+		break;
+	case 4:
+		if ((shape[value][0][0] >= 1) || (shape[value][1][0] >= 1) || (shape[value][2][0] >= 1) || (shape[value][3][0] >= 1) || (shape[value][4][0] >= 1))
+		{
+			if (diag[value][0] > 0)
+				diag[value][0] *= -1;
+		}
+		else if ((shape[value][0][0] <= -1) || (shape[value][1][0] <= -1) || (shape[value][2][0] <= -1) || (shape[value][3][0] <= -1) || (shape[value][4][0] <= -1))
+		{
+			if (diag[value][0] < 0)
+				diag[value][0] *= -1;
+		}
+		if ((shape[value][0][1] >= 1) || (shape[value][1][1] >= 1) || (shape[value][2][1] >= 1) || (shape[value][3][1] >= 1) || (shape[value][4][1] >= 1))
+		{
+			if (diag[value][1] > 0)
+				diag[value][1] *= -1;
+		}
+		else if ((shape[value][0][1] <= -1) || (shape[value][1][1] <= -1) || (shape[value][2][1] <= -1) || (shape[value][3][1] <= -1) || (shape[value][4][1] <= -1))
+		{
+			if (diag[value][1] < 0)
+				diag[value][1] *= -1;
+		}
+		break;
+	}
+	if (!select[value]) {
+		glutTimerFunc(50, diagonal, value);
+	}
+	else {
+		playtimer[value] = false;
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
+	glutPostRedisplay();
+}
+void bump(int base,GLfloat mx,GLfloat my) {
+	bool catching;
+	for (int j = 0; j < select_shape_type + 1; ++j) {
+		for (int k = 0; k < shape_type[base] + 1; ++k) {
+			if (shape_type[select_shape] == 0) {	//점이면
+				if (shape_type[base] != 10) {
+					if (shape_type[base] == 0) {
+						if ((shape[select_shape][j][0] >= shape[base][0][0] - 0.03f) && (shape[select_shape][j][0] <= shape[base][0][0] + 0.03f)) {
+							if ((shape[select_shape][j][1] >= shape[base][0][1] - 0.03f) && (shape[select_shape][j][1] <= shape[base][0][1] + 0.03f)) {
+								//겹치면
+								shape_type[base] = shape_type[base] + select_shape_type + 1;
+								shape_type[base] %= 5;
+								shape_type[select_shape] = 10;	//그리지 않는다.
+								switch (shape_type[base]) {
+								case 0:
+									shape[base][0][0] = mx;
+									shape[base][0][1] = my;
+									break;
+								case 1:
+									shape[base][0][0] = mx - 0.05f;
+									shape[base][0][1] = my - 0.05f;
+									shape[base][1][0] = shape[base][0][0] + 0.1f;
+									shape[base][1][1] = shape[base][0][1] + 0.1f;
+									break;
+								case 2:
+									shape[base][0][0] = mx - 0.05f;
+									shape[base][0][1] = my - 0.05f;
+									shape[base][1][0] = mx + 0.05f;
+									shape[base][1][1] = my - 0.05f;
+									shape[base][2][0] = mx;
+									shape[base][2][1] = my + 0.05f;
+									break;
+								case 3:
+									shape[base][0][0] = mx - 0.05f;
+									shape[base][0][1] = my - 0.05f;
+									shape[base][1][0] = mx + 0.05f;
+									shape[base][1][1] = my - 0.05f;
+									shape[base][2][0] = mx + 0.05f;
+									shape[base][2][1] = my + 0.05f;
+									shape[base][3][0] = mx - 0.05f;
+									shape[base][3][1] = my + 0.05f;
+									break;
+								case 4:
+									shape[base][0][0] = mx - 0.03f;
+									shape[base][0][1] = my - 0.04f;
+									shape[base][1][0] = shape[base][0][0] + 0.06f;
+									shape[base][1][1] = shape[base][0][1];
+									shape[base][2][0] = shape[base][0][0] + 0.08f;
+									shape[base][2][1] = shape[base][0][1] + 0.06f;
+									shape[base][3][0] = shape[base][0][0] + 0.03f;
+									shape[base][3][1] = shape[base][0][1] + 0.1f;
+									shape[base][4][0] = shape[base][0][0] - 0.02f;
+									shape[base][4][1] = shape[base][0][1] + 0.06f;
+									break;
+								}
+								select[select_shape] = false;
+								ontimer[base] = true;
+								catching = true;
+								glutTimerFunc(50, diagonal, base);
+							}
+						}
+					}
+					else if (shape_type[base] == 1) {
+						if ((shape[select_shape][j][1] - shape[base][0][1] >= shape[select_shape][j][0] - shape[base][0][0] - 0.03f) && (shape[select_shape][j][1] - shape[base][0][1] <= shape[select_shape][j][0] - shape[base][0][0] + 0.03f))
+						{
+							shape_type[base] = shape_type[base] + select_shape_type + 1;
+							shape_type[base] %= 5;
+							shape_type[select_shape] = 10;	//그리지 않는다.
+							switch (shape_type[base]) {
+							case 0:
+								shape[base][0][0] = mx;
+								shape[base][0][1] = my;
+								break;
+							case 1:
+								shape[base][0][0] = mx - 0.05f;
+								shape[base][0][1] = my - 0.05f;
+								shape[base][1][0] = shape[base][0][0] + 0.1f;
+								shape[base][1][1] = shape[base][0][1] + 0.1f;
+								break;
+							case 2:
+								shape[base][0][0] = mx - 0.05f;
+								shape[base][0][1] = my - 0.05f;
+								shape[base][1][0] = mx + 0.05f;
+								shape[base][1][1] = my - 0.05f;
+								shape[base][2][0] = mx;
+								shape[base][2][1] = my + 0.05f;
+								break;
+							case 3:
+								shape[base][0][0] = mx - 0.05f;
+								shape[base][0][1] = my - 0.05f;
+								shape[base][1][0] = mx + 0.05f;
+								shape[base][1][1] = my - 0.05f;
+								shape[base][2][0] = mx + 0.05f;
+								shape[base][2][1] = my + 0.05f;
+								shape[base][3][0] = mx - 0.05f;
+								shape[base][3][1] = my + 0.05f;
+								break;
+							case 4:
+								shape[base][0][0] = mx - 0.03f;
+								shape[base][0][1] = my - 0.04f;
+								shape[base][1][0] = shape[base][0][0] + 0.06f;
+								shape[base][1][1] = shape[base][0][1];
+								shape[base][2][0] = shape[base][0][0] + 0.08f;
+								shape[base][2][1] = shape[base][0][1] + 0.06f;
+								shape[base][3][0] = shape[base][0][0] + 0.03f;
+								shape[base][3][1] = shape[base][0][1] + 0.1f;
+								shape[base][4][0] = shape[base][0][0] - 0.02f;
+								shape[base][4][1] = shape[base][0][1] + 0.06f;
+								break;
+							}
+							select[select_shape] = false;
+							ontimer[base] = true;
+							catching = true;
+							glutTimerFunc(50, diagonal, base);
+						}
+					}
+					else {
+						if ((shape[select_shape][j][0] >= shape[base][0][0]) && (shape[select_shape][j][0] <= shape[base][0][0] + 0.1f)) {
+							if ((shape[select_shape][j][1] >= shape[base][0][1]) && (shape[select_shape][j][1] <= shape[base][0][1] + 0.1f)) {
+								//겹치면
+								shape_type[base] = shape_type[base] + select_shape_type + 1;
+								shape_type[base] %= 5;
+								shape_type[select_shape] = 10;	//그리지 않는다.
+								switch (shape_type[base]) {
+								case 0:
+									shape[base][0][0] = mx;
+									shape[base][0][1] = my;
+									break;
+								case 1:
+									shape[base][0][0] = mx - 0.05f;
+									shape[base][0][1] = my - 0.05f;
+									shape[base][1][0] = shape[base][0][0] + 0.1f;
+									shape[base][1][1] = shape[base][0][1] + 0.1f;
+									break;
+								case 2:
+									shape[base][0][0] = mx - 0.05f;
+									shape[base][0][1] = my - 0.05f;
+									shape[base][1][0] = mx + 0.05f;
+									shape[base][1][1] = my - 0.05f;
+									shape[base][2][0] = mx;
+									shape[base][2][1] = my + 0.05f;
+									break;
+								case 3:
+									shape[base][0][0] = mx - 0.05f;
+									shape[base][0][1] = my - 0.05f;
+									shape[base][1][0] = mx + 0.05f;
+									shape[base][1][1] = my - 0.05f;
+									shape[base][2][0] = mx + 0.05f;
+									shape[base][2][1] = my + 0.05f;
+									shape[base][3][0] = mx - 0.05f;
+									shape[base][3][1] = my + 0.05f;
+									break;
+								case 4:
+									shape[base][0][0] = mx - 0.03f;
+									shape[base][0][1] = my - 0.04f;
+									shape[base][1][0] = shape[base][0][0] + 0.06f;
+									shape[base][1][1] = shape[base][0][1];
+									shape[base][2][0] = shape[base][0][0] + 0.08f;
+									shape[base][2][1] = shape[base][0][1] + 0.06f;
+									shape[base][3][0] = shape[base][0][0] + 0.03f;
+									shape[base][3][1] = shape[base][0][1] + 0.1f;
+									shape[base][4][0] = shape[base][0][0] - 0.02f;
+									shape[base][4][1] = shape[base][0][1] + 0.06f;
+									break;
+								}
+								select[select_shape] = false;
+								ontimer[base] = true;
+								catching = true;
+								glutTimerFunc(50, diagonal, base);
+							}
+						}
+					}
+					if (catching)
+						break;
+				}
+			}
+			else {
+				if (shape_type[base] != 10) {
+					if ((shape[select_shape][j][0] >= shape[base][0][0]) && (shape[select_shape][j][0] <= shape[base][0][0] + 0.1f)) {
+						if ((shape[select_shape][j][1] >= shape[base][0][1]) && (shape[select_shape][j][1] <= shape[base][0][1] + 0.1f)) {
+							//겹치면
+							shape_type[base] = shape_type[base] + select_shape_type + 1;
+							shape_type[base] %= 5;
+							shape_type[select_shape] = 10;	//그리지 않는다.
+							switch (shape_type[base]) {
+							case 0:
+								shape[base][0][0] = mx;
+								shape[base][0][1] = my;
+								break;
+							case 1:
+								shape[base][0][0] = mx - 0.05f;
+								shape[base][0][1] = my - 0.05f;
+								shape[base][1][0] = shape[base][0][0] + 0.1f;
+								shape[base][1][1] = shape[base][0][1] + 0.1f;
+								break;
+							case 2:
+								shape[base][0][0] = mx - 0.05f;
+								shape[base][0][1] = my - 0.05f;
+								shape[base][1][0] = mx + 0.05f;
+								shape[base][1][1] = my - 0.05f;
+								shape[base][2][0] = mx;
+								shape[base][2][1] = my + 0.05f;
+								break;
+							case 3:
+								shape[base][0][0] = mx - 0.05f;
+								shape[base][0][1] = my - 0.05f;
+								shape[base][1][0] = mx + 0.05f;
+								shape[base][1][1] = my - 0.05f;
+								shape[base][2][0] = mx + 0.05f;
+								shape[base][2][1] = my + 0.05f;
+								shape[base][3][0] = mx - 0.05f;
+								shape[base][3][1] = my + 0.05f;
+								break;
+							case 4:
+								shape[base][0][0] = mx - 0.03f;
+								shape[base][0][1] = my - 0.04f;
+								shape[base][1][0] = shape[base][0][0] + 0.06f;
+								shape[base][1][1] = shape[base][0][1];
+								shape[base][2][0] = shape[base][0][0] + 0.08f;
+								shape[base][2][1] = shape[base][0][1] + 0.06f;
+								shape[base][3][0] = shape[base][0][0] + 0.03f;
+								shape[base][3][1] = shape[base][0][1] + 0.1f;
+								shape[base][4][0] = shape[base][0][0] - 0.02f;
+								shape[base][4][1] = shape[base][0][1] + 0.06f;
+								break;
+							}
+							select[select_shape] = false;
+							ontimer[base] = true;
+							catching = true;
+							glutTimerFunc(50, diagonal, base);
+						}
+						if (catching)
+							break;
+					}
+				}
+			}
+		}
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(shape), shape, GL_DYNAMIC_DRAW);
+	glutPostRedisplay();
 }
