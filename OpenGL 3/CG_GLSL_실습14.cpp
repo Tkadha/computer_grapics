@@ -270,13 +270,19 @@ void InitBuffer() {
 }
 GLvoid Keyboard(unsigned char key, int x, int y)
 {
+	std::uniform_int_distribution<> num(0, 4);
+	int number1, number2;
+	number1 = num(gen);
+	number2 = num(gen);
+	while (number1 == number2)
+		number2 = num(gen);
 	for (int i = 0; i < 6; ++i)
 		cube_slice_draw[i] = false;
 	switch (key) {
 	case '1':
 		cube_draw = true;
 		tetra_draw = false;
-		cube_slice_draw[0]=true;
+		cube_slice_draw[0] = true;
 		break;
 	case '2':
 		cube_draw = true;
@@ -324,6 +330,8 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	case 'c':
 		cube_draw = true;
 		tetra_draw = false;
+		cube_slice_draw[number1] = true;
+		cube_slice_draw[number2] = true;
 		break;
 	case 't':
 		cube_draw = false;
