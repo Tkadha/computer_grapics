@@ -30,7 +30,7 @@ GLvoid Keyboard(unsigned char key, int x, int y);
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID;
-GLuint vao, cubevbo[2],cube_ebo,tetravbo[2];
+GLuint vao, cubevbo[2],cube_ebo,tetravbo[2], tetra_ebo;
 
 GLfloat cube[8][3] = {
 	{ -side_length, side_length, side_length},
@@ -58,8 +58,19 @@ unsigned int cube_index[] = {
 	1,7,5
 };
 GLfloat cube_RGB[6][6][3];
-GLfloat tetra[4][9];
-GLfloat tetra_RGB[4][3];
+GLfloat tetra[4][3] ={
+	{ side_length, 0, 0},
+	{ -side_length, 0, 0},
+	{ 0, 0, -side_length},
+	{ 0, side_length, -side_length},
+};
+unsigned int tetra_index[] = {
+	3,1,2,
+	3,2,0,
+	3,0,1,
+	1,0,2
+};
+GLfloat tetra_RGB[12][3];
 
 GLuint vbo_line[2];
 GLfloat line[2][6];
@@ -68,6 +79,7 @@ GLfloat line_RGB[2][6];
 bool cube_draw;
 bool cube_slice_draw[6];
 bool tetra_draw;
+bool tetra_slice_draw[4];
 
 std::random_device rd;
 std::mt19937 gen(rd());
@@ -95,6 +107,9 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 			cube_RGB[i][5][k] = color(gen);
 		}
 	}
+	for (int i = 0; i < 12; ++i) 
+		for (int j = 0; j < 3; ++j)
+			tetra_RGB[i][j] = color(gen);
 	line[0][1] = 1;
 	line[0][4] = -1;
 	line[1][0] = 1;
@@ -137,13 +152,14 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		glDrawArrays(GL_LINES, 0, 2);
 	}
 
+
 	glm::mat4 trans = glm::mat4(1.0f);
-	trans = glm::rotate(trans, glm::radians(-20.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	trans = glm::rotate(trans, glm::radians(20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	unsigned int trans_location = glGetUniformLocation(shaderProgramID, "transform");
-	glUniformMatrix4fv(trans_location, 1, GL_FALSE, glm::value_ptr(trans));
 	glEnable(GL_DEPTH_TEST);
 	if (cube_draw) {
+		trans = glm::rotate(trans, glm::radians(-20.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		trans = glm::rotate(trans, glm::radians(20.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		unsigned int trans_location = glGetUniformLocation(shaderProgramID, "transform");
+		glUniformMatrix4fv(trans_location, 1, GL_FALSE, glm::value_ptr(trans));
 		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
 		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
@@ -151,6 +167,21 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		for (int i = 0; i < 6; ++i)
 			if (cube_slice_draw[i])
 				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * i * sizeof(GLfloat)));
+	}
+	else if (tetra_draw) {
+		trans = glm::translate(trans, glm::vec3(0.1f, -0.1f, 0.0f));
+		trans = glm::rotate(trans, glm::radians(30.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		trans = glm::rotate(trans, glm::radians(75.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		
+		unsigned int trans_location = glGetUniformLocation(shaderProgramID, "transform");
+		glUniformMatrix4fv(trans_location, 1, GL_FALSE, glm::value_ptr(trans));
+		glBindBuffer(GL_ARRAY_BUFFER, tetravbo[0]);
+		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, tetravbo[1]);
+		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		for (int i = 0; i < 4; ++i)
+			if (tetra_slice_draw[i])
+				glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3 * i * sizeof(GLfloat)));
 	}
 
 
@@ -243,6 +274,7 @@ void InitBuffer() {
 	glGenBuffers(2, tetravbo);
 	glGenBuffers(2, vbo_line);
 	glGenBuffers(1, &cube_ebo);
+	glGenBuffers(1, &tetra_ebo);
 
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
@@ -254,13 +286,15 @@ void InitBuffer() {
 	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cube_RGB), cube_RGB, GL_STATIC_DRAW);
 
-	/*
+	
 	glBindBuffer(GL_ARRAY_BUFFER, tetravbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(tetra), tetra, GL_STATIC_DRAW);
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tetra_ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(tetra_index), tetra_index, GL_STATIC_DRAW);
+
 	glBindBuffer(GL_ARRAY_BUFFER, tetravbo[1]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(tetra_RGB), tetra_RGB, GL_STATIC_DRAW);
-	*/
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_line[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(line), line, GL_STATIC_DRAW);
@@ -271,13 +305,23 @@ void InitBuffer() {
 GLvoid Keyboard(unsigned char key, int x, int y)
 {
 	std::uniform_int_distribution<> num(0, 4);
+	std::uniform_int_distribution<> tnum(0, 3);
 	int number1, number2;
 	number1 = num(gen);
 	number2 = num(gen);
 	while (number1 == number2)
 		number2 = num(gen);
+	int tnumber1, tnumber2;
+	tnumber1 = tnum(gen);
+	tnumber2 = tnum(gen);
+	while (tnumber1 == tnumber2)
+		tnumber2 = num(gen);
+
 	for (int i = 0; i < 6; ++i)
 		cube_slice_draw[i] = false;
+	for (int i = 0; i < 4; ++i)
+		tetra_slice_draw[i] = false;
+
 	switch (key) {
 	case '1':
 		cube_draw = true;
@@ -313,18 +357,22 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	case '7':
 		cube_draw = false;
 		tetra_draw = true;
+		tetra_slice_draw[0] = true;
 		break;
 	case '8':
 		cube_draw = false;
 		tetra_draw = true;
+		tetra_slice_draw[1] = true;
 		break;
 	case '9':
 		cube_draw = false;
 		tetra_draw = true;
+		tetra_slice_draw[2] = true;
 		break;
 	case '0':
 		cube_draw = false;
 		tetra_draw = true;
+		tetra_slice_draw[3] = true;
 		break;
 
 	case 'c':
@@ -336,7 +384,30 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	case 't':
 		cube_draw = false;
 		tetra_draw = true;
+		tetra_slice_draw[tnumber1] = true;
+		tetra_slice_draw[tnumber2] = true;
 		break;
+	}
+	if (cube_draw)
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube_ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cube_index), cube_index, GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_RGB), cube_RGB, GL_STATIC_DRAW);
+	}
+	else if (tetra_draw) {
+		glBindBuffer(GL_ARRAY_BUFFER, tetravbo[0]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(tetra), tetra, GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tetra_ebo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(tetra_index), tetra_index, GL_STATIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, tetravbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(tetra_RGB), tetra_RGB, GL_STATIC_DRAW);
 	}
 	glutPostRedisplay();
 }
