@@ -12,7 +12,7 @@
 
 #define Width 1200
 #define Height 800
-#define side_length 0.3
+#define side_length 0.2
 
 void make_vertexShaders();
 void make_fragmentShaders();
@@ -22,15 +22,15 @@ GLvoid Reshape(int w, int h);
 char* filetobuf(const char* file);
 void InitBuffer();
 GLvoid Keyboard(unsigned char key, int x, int y);
-void SpecialKeyboard(int, int, int);
 void rotate_x(int);
 void rotate_y(int);
+void rotate_center_y(int);
 
 
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID;
-GLuint vao, cubevbo[2], cube_ebo, tetravbo[2], tetra_ebo;
+GLuint vao, cubevbo[2], cube_ebo;
 
 GLfloat cube[8][3] = {
 	{ -side_length, side_length, side_length},
@@ -58,39 +58,30 @@ unsigned int cube_index[] = {
 	5,1,0
 };
 GLfloat cube_RGB[6][6][3];
-GLfloat tetra[5][3] = {
-	{ -side_length, 0, side_length},
-	{ -side_length, 0, -side_length},
-	{ side_length, 0, -side_length},
-	{ side_length, 0, side_length},
-	{ 0, 2*side_length, 0},
-};
-unsigned int tetra_index[] = {
-	0,1,3,
-	3,1,2,
-	4,1,2,
-	4,0,1,
-	4,2,3,
-	4,3,0
-};
-GLfloat tetra_RGB[5][3];
 
 GLuint vbo_line[2];
-GLfloat line[2][6];
-GLfloat line_RGB[2][6];
+GLfloat line[3][6];
+GLfloat line_RGB[3][6];
 
 bool cube_draw;
-bool tetra_draw;
-bool depth_test;
-bool triangle;
+bool sphere_draw;
 bool timer_x;
 bool timer_y;
+bool timer_center_y;
 float x_1;
 float y_1;
+float x_2;
+float y_2;
+float center_y;
 float addx_1;
 float addy_1;
-float movex;
-float movey;
+float addx_2;
+float addy_2;
+float add_center_y;
+bool rotate_xy_1;
+bool rotate_xy_2;
+GLUquadricObj* cylinderobj;
+GLUquadricObj* otherobj;
 std::random_device rd;
 std::mt19937 gen(rd());
 std::uniform_real_distribution<> color(0, 1);
@@ -106,8 +97,12 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glewExperimental = GL_TRUE;
 	glewInit();
 	make_shaderProgram();
-	x_1 = 30.0f;
-	y_1 = 30.0f;
+	x_1 = 35.0f;
+	y_1 = -10.0f;
+	x_2 = 35.0f;
+	y_2 = -10.0f;
+	cube_draw = true;
+	sphere_draw = true;
 	for (int i = 0; i < 6; ++i) {
 		for (int k = 0; k < 3; ++k)
 		{
@@ -119,19 +114,23 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 			cube_RGB[i][5][k] = color(gen);
 		}
 	}
-	for (int i = 0; i < 5; ++i)
-		for (int j = 0; j < 3; ++j)
-			tetra_RGB[i][j] = color(gen);
 	line[0][1] = 1;
 	line[0][4] = -1;
+	line_RGB[0][1] = 1;
+	line_RGB[0][4] = 1;
 	line[1][0] = 1;
 	line[1][3] = -1;
+	line_RGB[1][0] = 1;
+	line_RGB[1][3] = 1;
+	line[2][2] = 20;
+	line[2][5] = -20;
+	line_RGB[2][2] = 1;
+	line_RGB[2][5] = 1;
 	InitBuffer();
 	//--- 세이더 읽어와서 세이더 프로그램 만들기
 	glutDisplayFunc(drawScene); //--- 출력 콜백 함수
 	glutReshapeFunc(Reshape);
 	glutKeyboardFunc(Keyboard);
-	glutSpecialFunc(SpecialKeyboard);
 	glutMainLoop();
 }
 
@@ -151,60 +150,75 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glEnableVertexAttribArray(ColorLocation);
 
 	glm::mat4 lines = glm::mat4(1.0f);
-	lines = glm::translate(lines, glm::vec3(0.0f, 0.0f, 0.0f));
+	lines = glm::rotate(lines, glm::radians(35.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	lines = glm::rotate(lines, glm::radians(-10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	unsigned int lines_location = glGetUniformLocation(shaderProgramID, "transform");
 	glUniformMatrix4fv(lines_location, 1, GL_FALSE, glm::value_ptr(lines));
 
-	for (int i = 0; i < 2; ++i) {
+	for (int i = 0; i < 3; ++i) {
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_line[0]);
 		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(i * 6 * sizeof(GLfloat)));
 		glEnableVertexAttribArray(PosLocation);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_line[1]);
 		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(i * 6 * sizeof(GLfloat)));
 		glEnableVertexAttribArray(ColorLocation);
+		glLineWidth(1);
 		glDrawArrays(GL_LINES, 0, 2);
 	}
 
 
-	glm::mat4 trans = glm::mat4(1.0f);
-	if(depth_test)
-		glEnable(GL_DEPTH_TEST);
+	glm::mat4 trans_1 = glm::mat4(1.0f);
+	glm::mat4 trans_2 = glm::mat4(1.0f);
+	glEnable(GL_DEPTH_TEST);
+	trans_1 = glm::rotate(trans_1, glm::radians(center_y), glm::vec3(0.0f, 1.0f, 0.0f));
+	trans_1 = glm::translate(trans_1, glm::vec3(-0.5f, 0.3f, 0.0f));
+	trans_1 = glm::rotate(trans_1, glm::radians(x_1), glm::vec3(1.0f, 0.0f, 0.0f));
+	trans_1 = glm::rotate(trans_1, glm::radians(y_1), glm::vec3(0.0f, 1.0f, 0.0f));
+	unsigned int trans_location = glGetUniformLocation(shaderProgramID, "transform");
+	glUniformMatrix4fv(trans_location, 1, GL_FALSE, glm::value_ptr(trans_1));
+	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
+	glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
+	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+	if (cube_draw)
+	{
+		glLineWidth(3);
+		glDrawElements(GL_LINE_STRIP, 36, GL_UNSIGNED_INT, 0);
+	}
 	else
-		glDisable(GL_DEPTH_TEST);
-	if (cube_draw) {
-		trans = glm::translate(trans, glm::vec3(movex, movey, 0.0f));
-		trans = glm::rotate(trans, glm::radians(x_1), glm::vec3(1.0f, 0.0f, 0.0f));
-		trans = glm::rotate(trans, glm::radians(y_1), glm::vec3(0.0f, 1.0f, 0.0f));
-		unsigned int trans_location = glGetUniformLocation(shaderProgramID, "transform");
-		glUniformMatrix4fv(trans_location, 1, GL_FALSE, glm::value_ptr(trans));
-		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
-		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
-		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-		if(triangle)
-			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-		else
-			glDrawElements(GL_LINE_STRIP, 36, GL_UNSIGNED_INT, 0);
-	}
-	else if (tetra_draw) {
-		trans = glm::translate(trans, glm::vec3(movex, movey, 0.0f));
-		trans = glm::rotate(trans, glm::radians(x_1), glm::vec3(1.0f, 0.0f, 0.0f));
-		trans = glm::rotate(trans, glm::radians(y_1), glm::vec3(0.0f, 1.0f, 0.0f));	
-		trans = glm::translate(trans, glm::vec3(0.0f, -0.1f, 0.0f));
-
-		unsigned int trans_location = glGetUniformLocation(shaderProgramID, "transform");
-		glUniformMatrix4fv(trans_location, 1, GL_FALSE, glm::value_ptr(trans));
-		glBindBuffer(GL_ARRAY_BUFFER, tetravbo[0]);
-		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-		glBindBuffer(GL_ARRAY_BUFFER, tetravbo[1]);
-		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-		if(triangle)
-			glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
-		else
-			glDrawElements(GL_LINE_STRIP, 18, GL_UNSIGNED_INT, 0);
+	{
+		glLineWidth(1);
+		cylinderobj = gluNewQuadric();
+		gluQuadricDrawStyle(cylinderobj, GLU_LINE);
+		gluQuadricNormals(cylinderobj, GLU_SMOOTH);
+		gluQuadricOrientation(cylinderobj, GLU_OUTSIDE);
+		gluCylinder(cylinderobj, 0.2, 0.2, 0.5, 20, 10);
 	}
 
-
+	trans_2 = glm::rotate(trans_2, glm::radians(center_y), glm::vec3(0.0f, 1.0f, 0.0f));
+	trans_2 = glm::translate(trans_2, glm::vec3(0.5f, 0.3f, 0.0f));
+	trans_2 = glm::rotate(trans_2, glm::radians(x_2), glm::vec3(1.0f, 0.0f, 0.0f));
+	trans_2 = glm::rotate(trans_2, glm::radians(y_2), glm::vec3(0.0f, 1.0f, 0.0f));
+	unsigned int trans_location_2 = glGetUniformLocation(shaderProgramID, "transform");
+	glUniformMatrix4fv(trans_location_2, 1, GL_FALSE, glm::value_ptr(trans_2));
+	if (sphere_draw)
+	{
+		glLineWidth(1);
+		otherobj = gluNewQuadric();
+		gluQuadricDrawStyle(otherobj, GLU_LINE);
+		gluQuadricNormals(otherobj, GLU_SMOOTH);
+		gluQuadricOrientation(otherobj, GLU_OUTSIDE);
+		gluSphere(otherobj, 0.2, 20, 20);
+	}
+	else
+	{
+		glLineWidth(1);
+		otherobj = gluNewQuadric();
+		gluQuadricDrawStyle(otherobj, GLU_LINE);
+		gluQuadricNormals(otherobj, GLU_SMOOTH);
+		gluQuadricOrientation(otherobj, GLU_OUTSIDE);
+		gluCylinder(otherobj, 0.2, 0.0, 0.5, 20, 10);
+	}
 	glDisableVertexAttribArray(ColorLocation);
 	glDisableVertexAttribArray(PosLocation);
 
@@ -291,10 +305,8 @@ void InitBuffer() {
 
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(2, cubevbo);
-	glGenBuffers(2, tetravbo);
 	glGenBuffers(2, vbo_line);
 	glGenBuffers(1, &cube_ebo);
-	glGenBuffers(1, &tetra_ebo);
 
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
@@ -307,15 +319,6 @@ void InitBuffer() {
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cube_RGB), cube_RGB, GL_STATIC_DRAW);
 
 
-	glBindBuffer(GL_ARRAY_BUFFER, tetravbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(tetra), tetra, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tetra_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(tetra_index), tetra_index, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, tetravbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(tetra_RGB), tetra_RGB, GL_STATIC_DRAW);
-
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_line[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(line), line, GL_STATIC_DRAW);
 
@@ -327,26 +330,27 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 
 
 	switch (key) {
+	case '1':
+		rotate_xy_1 = true;
+		rotate_xy_2 = false;
+		break;
+	case '2':
+		rotate_xy_1 = false;
+		rotate_xy_2 = true;
+		break;
+	case '3':
+		rotate_xy_1 = true;
+		rotate_xy_2 = true;
+		break;
 	case 'c':
-		cube_draw = true;
-		tetra_draw = false;
-		break;
-	case 'p':
-		cube_draw = false;
-		tetra_draw = true;
-		break;
-	case 'h':
-		if (depth_test)
-			depth_test = false;
+		if (cube_draw)
+			cube_draw = false;
 		else
-			depth_test = true;
-		break;
-	case 'w':
-	case 'W':
-		if (triangle)
-			triangle = false;
+			cube_draw = true;
+		if (sphere_draw)
+			sphere_draw = false;
 		else
-			triangle = true;
+			sphere_draw = true;
 		break;
 	case 'x':
 		if (!timer_x)
@@ -355,6 +359,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			glutTimerFunc(50, rotate_x, 0);
 		}
 		addx_1 = 1.0f;
+		addx_2 = 1.0f;
 		break;
 	case 'X':
 		if (!timer_x) {
@@ -362,6 +367,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			glutTimerFunc(50, rotate_x, 0);
 		}
 		addx_1 = -1.0f;
+		addx_2 = -1.0f;
 		break;
 	case 'y':
 		if (!timer_y) {
@@ -369,6 +375,7 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			glutTimerFunc(50, rotate_y, 0);
 		}
 		addy_1 = 1.0f;
+		addy_2 = 1.0f;
 		break;
 	case 'Y':
 		if (!timer_y) {
@@ -376,18 +383,33 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			glutTimerFunc(50, rotate_y, 0);
 		}
 		addy_1 = -1.0f;
+		addy_2 = -1.0f;
+		break;
+	case 'r':
+		if (!timer_center_y) {
+			timer_center_y = true;
+			glutTimerFunc(50, rotate_center_y, 0);
+		}
+		add_center_y = 1.0f;
+		break;
+	case 'R':
+		if (!timer_center_y) {
+			timer_center_y = true;
+			glutTimerFunc(50, rotate_center_y, 0);
+		}
+		add_center_y = -1.0f;
 		break;
 	case 's':
-		cube_draw = false;
-		tetra_draw = false;
-		depth_test = false;
-		triangle = false;
+		cube_draw = true;
+		sphere_draw = true;
 		timer_x = false;
 		timer_y = false;
-		movex = 0;
-		movey = 0;
-		x=30.0f;
-		y=30.0f;
+		timer_center_y = false;
+		x_1 = 35.0f;
+		y_1 = -10.0f;
+		x_2 = 35.0f;
+		y_2 = -10.0f;
+		center_y = 0;
 		break;
 
 	}
@@ -402,45 +424,29 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_RGB), cube_RGB, GL_STATIC_DRAW);
 	}
-	else if (tetra_draw) {
-		glBindBuffer(GL_ARRAY_BUFFER, tetravbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(tetra), tetra, GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tetra_ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(tetra_index), tetra_index, GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ARRAY_BUFFER, tetravbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(tetra_RGB), tetra_RGB, GL_STATIC_DRAW);
-	}
 	glutPostRedisplay();
 }
-void rotate_x(int value){
-	x_1 += addx_1;
+void rotate_x(int value) {
+	if (rotate_xy_1)
+		x_1 += addx_1;
+	if (rotate_xy_2)
+		x_2 += addx_2;
 	if (timer_x)
 		glutTimerFunc(1, rotate_x, value);
 	glutPostRedisplay();
 }
 void rotate_y(int value) {
-	y_1 += addy_1;
+	if (rotate_xy_1)
+		y_1 += addy_1;
+	if (rotate_xy_2)
+		y_2 += addy_2;
 	if (timer_y)
 		glutTimerFunc(1, rotate_y, value);
 	glutPostRedisplay();
 }
-void SpecialKeyboard(int key, int x, int y) {
-
-	switch (key) {
-	case GLUT_KEY_LEFT:
-		movex -= 0.05f;
-		break;
-	case GLUT_KEY_RIGHT:
-		movex += 0.05f;
-		break;
-	case GLUT_KEY_UP:
-		movey += 0.05f;
-		break;
-	case GLUT_KEY_DOWN:
-		movey -= 0.05f;
-		break;
-	}
+void rotate_center_y(int value) {
+	center_y += add_center_y;
+	if (timer_center_y)
+		glutTimerFunc(1, rotate_center_y, value);
 	glutPostRedisplay();
 }
