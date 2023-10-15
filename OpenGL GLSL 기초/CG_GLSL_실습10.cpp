@@ -239,7 +239,7 @@ void circle_spiral(int value)
 	}
 	else
 	{
-		spiral[value][(point_count[value] + 1) * 3] = spiral[value][point_count[value] * 3] + sin((angle[value]-90) * PI / 180) * radius[value];
+		spiral[value][(point_count[value] + 1) * 3] = spiral[value][point_count[value] * 3] + sin((angle[value] - 90) * PI / 180) * radius[value];
 		spiral[value][(point_count[value] + 1) * 3 + 1] = spiral[value][point_count[value] * 3 + 1] + cos((angle[value] - 90) * PI / 180) * radius[value];
 		radius[value] -= 0.00005f;
 	}
