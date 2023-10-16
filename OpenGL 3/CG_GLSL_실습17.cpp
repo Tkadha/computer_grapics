@@ -24,6 +24,7 @@ char* filetobuf(const char* file);
 void InitBuffer();
 GLvoid Keyboard(unsigned char key, int x, int y);
 void rotate_center(int);
+void rotate_shapes(int);
 void scale_shape(int);
 void scale_point_shape(int);
 void move_rollback(int);
@@ -111,7 +112,8 @@ float movez_1;
 float movex_2;
 float movey_2;
 float movez_2;
-
+float half_x;
+float half_z;
 GLfloat spiral[3003];
 bool see_spiral;
 
@@ -200,8 +202,10 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 
 	if (see_spiral) {
 		glm::mat4 spirals = glm::mat4(1.0f);
+
 		spirals = glm::rotate(spirals, glm::radians(-35.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		spirals = glm::rotate(spirals, glm::radians(-10.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
 		unsigned int spirals_location = glGetUniformLocation(shaderProgramID, "transform");
 		glUniformMatrix4fv(spirals_location, 1, GL_FALSE, glm::value_ptr(spirals));
 		glBindBuffer(GL_ARRAY_BUFFER, spiralvbo);
@@ -236,7 +240,10 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	trans_1 = glm::scale(trans_1, glm::vec3(scale_2, scale_2, scale_2));
+
 	trans_1 = glm::rotate(trans_1, glm::radians(center), glm::vec3(0.0f, 1.0f, 0.0f));
+
+
 	trans_1 = glm::translate(trans_1, glm::vec3(pos1_x, pos1_y, 0));
 	trans_1 = glm::rotate(trans_1, glm::radians(-center), glm::vec3(0.0f, 1.0f, 0.0f));
 	trans_1 = glm::rotate(trans_1, glm::radians(x_1), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -264,13 +271,16 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		gluCylinder(cylinderobj, 0.2, 0.2, 0.5, 20, 10);
 	}
 	trans_2 = glm::scale(trans_2, glm::vec3(scale_2, scale_2, scale_2));
+
 	trans_2 = glm::rotate(trans_2, glm::radians(center), glm::vec3(0.0f, 1.0f, 0.0f));
+
 	trans_2 = glm::translate(trans_2, glm::vec3(pos2_x, pos2_y, 0.0f));
 	trans_2 = glm::rotate(trans_2, glm::radians(-center), glm::vec3(0.0f, 1.0f, 0.0f));
 	trans_2 = glm::rotate(trans_2, glm::radians(x_2), glm::vec3(1.0f, 0.0f, 0.0f));
 	trans_2 = glm::rotate(trans_2, glm::radians(y_2), glm::vec3(0.0f, 1.0f, 0.0f));
 	trans_2 = glm::translate(trans_2, glm::vec3(0, 0, pos2_z));
 	trans_2 = glm::scale(trans_2, glm::vec3(scale_1, scale_1, scale_1));
+
 	unsigned int trans_location_2 = glGetUniformLocation(shaderProgramID, "transform");
 	glUniformMatrix4fv(trans_location_2, 1, GL_FALSE, glm::value_ptr(trans_2));
 	if (sphere_draw)
@@ -431,7 +441,11 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	case '2':	// 공전하면서 상대방 자리로 이동
 		if (!timer_center) {
 			timer_center = true;
-			glutTimerFunc(1, rotate_center, 0);
+			half_x = abs(pos1_x - pos2_x) / 2;
+			half_z = abs(pos1_z - pos2_z) / 2;
+			movey_1 = pos1_y / 90;
+			movey_2 = pos2_y / 90;
+			glutTimerFunc(1, rotate_shapes, 0);
 		}
 		break;
 	case '3':	// 위아래로 이동후 상대방 자리로
@@ -549,6 +563,8 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		pos2_x = 0.5f;
 		pos2_y = 0.3f;
 		pos2_z = 0.5f;
+		half_x = 0;
+		half_z = 0;
 		break;
 
 	}
@@ -576,6 +592,29 @@ void rotate_center(int value) {
 		{
 			timer_center = false;
 			count_center = 0;
+		}
+	glutPostRedisplay();
+}
+void rotate_shapes(int value) {
+	center += add_center;
+	if (count_center < 90) {
+		pos1_y -= movey_1;
+		pos2_y -= movey_2;
+	}
+	else {
+		pos1_y += movey_2;
+		pos2_y += movey_1;
+	}
+	++count_center;
+	if (timer_center)
+		if (count_center < 180)
+			glutTimerFunc(1, rotate_shapes, value);
+		else
+		{
+			timer_center = false;
+			count_center = 0;
+			half_x = 0;
+			half_z = 0;
 		}
 	glutPostRedisplay();
 }
