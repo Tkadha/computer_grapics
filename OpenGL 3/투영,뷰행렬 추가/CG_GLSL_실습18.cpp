@@ -29,6 +29,8 @@ void LR_rect_up_y(int);
 void open_front(int);
 void open_back(int);
 
+void open_cone(int);
+void open_cone_one(int);
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID;
@@ -67,6 +69,32 @@ GLfloat cube[6][12] = {
 };
 GLfloat cube_RGB[6][12];
 
+GLuint conevbo[2];
+GLfloat cone[6][9] = {
+	{ -side_length, 0, side_length,	//앞
+	   side_length, 0, side_length,
+	   0, side_length * 2,0},
+	{ -side_length, 0,-side_length,	//왼
+	  -side_length, 0, side_length,
+	   0,2 * side_length,0},
+	 { side_length, 0, -side_length,// 뒤
+	  -side_length, 0, -side_length,
+	   0,2 * side_length,0},
+	{ side_length, 0,side_length, // 오
+	  side_length, 0, -side_length,
+	   0,2 * side_length,0},
+
+
+	   //바닥
+	{ -side_length, 0, -side_length,
+	   side_length, 0, side_length,
+	   -side_length,0,side_length},
+	{ -side_length, 0, -side_length,
+	   side_length, 0, -side_length,
+	   side_length, 0, side_length}
+};
+GLfloat cone_RGB[6][9];
+
 GLuint vbo_line[2];
 GLfloat line[3][6];
 GLfloat line_RGB[3][6];
@@ -87,6 +115,14 @@ bool LR_up_on;
 bool open_front_on;
 bool open_back_on;
 bool perspec_on;
+
+float cone_open_radian[4];
+float add_cone_radian_all[4];
+float add_cone_radian_one[4];
+bool cone_on;
+bool cone_open_on;
+bool cone_open_one_on;
+
 
 
 std::random_device rd;
@@ -114,6 +150,16 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 			cube_RGB[i][k] = color(gen);
 			cube_RGB[i][k] = color(gen);
 		}
+		for (int k = 0; k < 9; ++k)
+		{
+			cone_RGB[i][k] = color(gen);
+			cone_RGB[i][k] = color(gen);
+			cone_RGB[i][k] = color(gen);
+			cone_RGB[i][k] = color(gen);
+			cone_RGB[i][k] = color(gen);
+			cone_RGB[i][k] = color(gen);
+		}
+
 	}
 	line[0][1] = 1;
 	line[0][4] = -1;
@@ -137,6 +183,17 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 
 	open_back_scale = 1;
 	sizex = -0.01f;
+
+	add_cone_radian_all[0] = 3.0f;
+	add_cone_radian_all[1] = 3.0f;
+	add_cone_radian_all[2] = 3.0f;
+	add_cone_radian_all[3] = 3.0f;
+
+	add_cone_radian_one[0] = 3.0f;
+	add_cone_radian_one[1] = 3.0f;
+	add_cone_radian_one[2] = 3.0f;
+	add_cone_radian_one[3] = 3.0f;
+
 	{	//설명
 		std::cout << "h: 은면제거 설정 / 해제" << std::endl;
 		std::cout << "y: y축에 대하여 자전 / 멈춤" << std::endl;
@@ -145,6 +202,9 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 		std::cout << "s: 육면체의 옆면 열기 / 닫기" << std::endl;
 		std::cout << "b: 육면체의 뒷면 열기 / 닫기" << std::endl;
 		std::cout << "p: 직각투영 / 원근투영" << std::endl;
+		std::cout << "n: 육면체 / 사각뿔 변경" << std::endl;
+		std::cout << "o: 사각뿔 열림/ 닫힘" << std::endl;
+		std::cout << "r: 사각뿔 한면씩 열림 / 닫힘" << std::endl;
 
 	}
 	InitBuffer();
@@ -178,7 +238,7 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glm::mat4 proj = glm::mat4(1.0f);
 	if (perspec_on) {
 		proj = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 50.0f);
-		proj = glm::translate(proj, glm::vec3(0.f, 0.f, -2.0f));
+		proj = glm::translate(proj, glm::vec3(0.f, 0.f, -5.0f));
 	}
 	else
 	{
@@ -224,59 +284,102 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	trans = glm::rotate(trans, glm::radians(cube_y), glm::vec3(0.0f, 1.0f, 0.0f));
 
 
-
+	unsigned int shape_location = glGetUniformLocation(shaderProgramID, "transform");
+	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(trans));
+	unsigned int cone_location = glGetUniformLocation(shaderProgramID, "transform");
 	unsigned int cube_location = glGetUniformLocation(shaderProgramID, "transform");
-	glUniformMatrix4fv(cube_location, 1, GL_FALSE, glm::value_ptr(trans));
-	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
-	glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 
-	{//아래
-		glDrawArrays(GL_TRIANGLE_FAN, 20, 4);
-	}
+	if (cone_on) {
+		glBindBuffer(GL_ARRAY_BUFFER, conevbo[0]);
+		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, conevbo[1]);
+		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glDrawArrays(GL_TRIANGLES, 12, 3);//바닥1
+		glDrawArrays(GL_TRIANGLES, 15, 3);//바닥2
 
-	{//앞
 		glm::mat4 front_rect = trans;
-		front_rect = glm::translate(front_rect, glm::vec3(0.0f, -side_length, side_length));
-		front_rect = glm::rotate(front_rect, glm::radians(open_front_x), glm::vec3(1.0f, 0.0f, 0.0f));
-		front_rect = glm::translate(front_rect, glm::vec3(0.0f, side_length, -side_length));
-		unsigned int cube_location = glGetUniformLocation(shaderProgramID, "transform");
-		glUniformMatrix4fv(cube_location, 1, GL_FALSE, glm::value_ptr(front_rect));
-		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-	}
+		front_rect = glm::translate(front_rect, glm::vec3(0.0f, 0.0f, side_length));
+		front_rect = glm::rotate(front_rect, glm::radians(cone_open_radian[0]), glm::vec3(1.0f, 0.0f, 0.0f));
+		front_rect = glm::translate(front_rect, glm::vec3(0.0f, 0.0f, -side_length));
+		glUniformMatrix4fv(cone_location, 1, GL_FALSE, glm::value_ptr(front_rect));
+		glDrawArrays(GL_TRIANGLES, 0, 3);//앞
 
-	{//뒤
+		glm::mat4 left_rect = trans;
+		left_rect = glm::translate(left_rect, glm::vec3(-side_length, 0.0f, 0.0f));
+		left_rect = glm::rotate(left_rect, glm::radians(cone_open_radian[1]), glm::vec3(0.0f, 0.0f, 1.0f));
+		left_rect = glm::translate(left_rect, glm::vec3(side_length, 0.0f, 0.0f));
+		glUniformMatrix4fv(cone_location, 1, GL_FALSE, glm::value_ptr(left_rect));
+		glDrawArrays(GL_TRIANGLES, 3, 3);//왼
+
 		glm::mat4 back_rect = trans;
 		back_rect = glm::translate(back_rect, glm::vec3(0.0f, 0.0f, -side_length));
-		back_rect = glm::scale(back_rect, glm::vec3(open_back_scale, open_back_scale, open_back_scale));
+		back_rect = glm::rotate(back_rect, glm::radians(-cone_open_radian[2]), glm::vec3(1.0f, 0.0f, 0.0f));
 		back_rect = glm::translate(back_rect, glm::vec3(0.0f, 0.0f, side_length));
-		unsigned int cube_location = glGetUniformLocation(shaderProgramID, "transform");
-		glUniformMatrix4fv(cube_location, 1, GL_FALSE, glm::value_ptr(back_rect));
-		glDrawArrays(GL_TRIANGLE_FAN, 12, 4);
+		glUniformMatrix4fv(cone_location, 1, GL_FALSE, glm::value_ptr(back_rect));
+		glDrawArrays(GL_TRIANGLES, 6, 3);//뒤
+
+		glm::mat4 right_rect = trans;
+		right_rect = glm::translate(right_rect, glm::vec3(side_length, 0.0f, 0.0f));
+		right_rect = glm::rotate(right_rect, glm::radians(-cone_open_radian[3]), glm::vec3(0.0f, 0.0f, 1.0f));
+		right_rect = glm::translate(right_rect, glm::vec3(-side_length, 0.0f, 0.0f));
+		glUniformMatrix4fv(cone_location, 1, GL_FALSE, glm::value_ptr(right_rect));
+		glDrawArrays(GL_TRIANGLES, 9, 3);//오
+
+
+
+
+
+
 	}
+	else
+	{		
+		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
+		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
+		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+
+		{//아래
+			glDrawArrays(GL_TRIANGLE_FAN, 20, 4);
+		}
+
+		{//앞
+			glm::mat4 front_rect = trans;
+			front_rect = glm::translate(front_rect, glm::vec3(0.0f, -side_length, side_length));
+			front_rect = glm::rotate(front_rect, glm::radians(open_front_x), glm::vec3(1.0f, 0.0f, 0.0f));
+			front_rect = glm::translate(front_rect, glm::vec3(0.0f, side_length, -side_length));
+			glUniformMatrix4fv(cube_location, 1, GL_FALSE, glm::value_ptr(front_rect));
+			glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+		}
+
+		{//뒤
+			glm::mat4 back_rect = trans;
+			back_rect = glm::translate(back_rect, glm::vec3(0.0f, 0.0f, -side_length));
+			back_rect = glm::scale(back_rect, glm::vec3(open_back_scale, open_back_scale, open_back_scale));
+			back_rect = glm::translate(back_rect, glm::vec3(0.0f, 0.0f, side_length));
+			glUniformMatrix4fv(cube_location, 1, GL_FALSE, glm::value_ptr(back_rect));
+			glDrawArrays(GL_TRIANGLE_FAN, 12, 4);
+		}
 
 
-	{//오른쪽
-		glm::mat4 LR_rect = trans;
-		LR_rect = glm::translate(LR_rect, glm::vec3(0.0f, movey, 0.0f));
-		unsigned int cube_location = glGetUniformLocation(shaderProgramID, "transform");
-		glUniformMatrix4fv(cube_location, 1, GL_FALSE, glm::value_ptr(LR_rect));
-		glDrawArrays(GL_TRIANGLE_FAN, 4, 4);
-	}
-	{//왼쪽
-		glDrawArrays(GL_TRIANGLE_FAN, 8, 4);
-	}
+		{//오른쪽
+			glm::mat4 LR_rect = trans;
+			LR_rect = glm::translate(LR_rect, glm::vec3(0.0f, movey, 0.0f));
+			glUniformMatrix4fv(cube_location, 1, GL_FALSE, glm::value_ptr(LR_rect));
+			glDrawArrays(GL_TRIANGLE_FAN, 4, 4);
+		}
+		{//왼쪽
+			glDrawArrays(GL_TRIANGLE_FAN, 8, 4);
+		}
 
 
-	{//위
-		glm::mat4 up_rect = trans;
-		up_rect = glm::translate(up_rect, glm::vec3(0.0f, side_length, 0.0f));
-		up_rect = glm::rotate(up_rect, glm::radians(up_rect_rotate), glm::vec3(1.0f, 0.0f, 0.0f));
-		up_rect = glm::translate(up_rect, glm::vec3(0.0f, -side_length, 0.0f));
-		unsigned int cube_location = glGetUniformLocation(shaderProgramID, "transform");
-		glUniformMatrix4fv(cube_location, 1, GL_FALSE, glm::value_ptr(up_rect));
-		glDrawArrays(GL_TRIANGLE_FAN, 16, 4);
+		{//위
+			glm::mat4 up_rect = trans;
+			up_rect = glm::translate(up_rect, glm::vec3(0.0f, side_length, 0.0f));
+			up_rect = glm::rotate(up_rect, glm::radians(up_rect_rotate), glm::vec3(1.0f, 0.0f, 0.0f));
+			up_rect = glm::translate(up_rect, glm::vec3(0.0f, -side_length, 0.0f));
+			glUniformMatrix4fv(cube_location, 1, GL_FALSE, glm::value_ptr(up_rect));
+			glDrawArrays(GL_TRIANGLE_FAN, 16, 4);
+		}
 	}
 	glDisableVertexAttribArray(ColorLocation);
 	glDisableVertexAttribArray(PosLocation);
@@ -365,6 +468,7 @@ void InitBuffer() {
 	glGenVertexArrays(1, &vao);
 	glGenBuffers(2, cubevbo);
 	glGenBuffers(2, vbo_line);
+	glGenBuffers(2, conevbo);
 
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
@@ -373,6 +477,11 @@ void InitBuffer() {
 	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cube_RGB), cube_RGB, GL_STATIC_DRAW);
 
+	glBindBuffer(GL_ARRAY_BUFFER, conevbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cone), cone, GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, conevbo[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cone_RGB), cone_RGB, GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_line[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(line), line, GL_STATIC_DRAW);
@@ -400,31 +509,39 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		}
 		break;
 	case 't':
-		if (up_rect_rotate_on) {
-			up_rect_rotate_on = false;
-		}
-		else {
-			up_rect_rotate_on = true;
-			glutTimerFunc(10, up_rect_rotate_x, 0);
+		if (!cone_on) {
+			if (up_rect_rotate_on) {
+				up_rect_rotate_on = false;
+			}
+			else {
+				up_rect_rotate_on = true;
+				glutTimerFunc(10, up_rect_rotate_x, 0);
+			}
 		}
 		break;
 	case 'f':
-		if (!open_front_on) {
-			open_front_on = true;
-			glutTimerFunc(10, open_front, 0);
+		if (!cone_on) {
+
+			if (!open_front_on) {
+				open_front_on = true;
+				glutTimerFunc(10, open_front, 0);
+			}
 		}
 		break;
-		break;
 	case 's':
-		if (!LR_up_on) {
-			LR_up_on = true;
-			glutTimerFunc(10, LR_rect_up_y, 0);
+		if (!cone_on) {
+			if (!LR_up_on) {
+				LR_up_on = true;
+				glutTimerFunc(10, LR_rect_up_y, 0);
+			}
 		}
 		break;
 	case 'b':
-		if (!open_back_on) {
-			open_back_on = true;
-			glutTimerFunc(10, open_back, 0);
+		if (!cone_on) {
+			if (!open_back_on) {
+				open_back_on = true;
+				glutTimerFunc(10, open_back, 0);
+			}
 		}
 		break;
 	case 'p':
@@ -432,6 +549,37 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			perspec_on = false;
 		else
 			perspec_on = true;
+		break;
+	case 'n':
+		if (cone_on)
+			cone_on = false;
+		else
+			cone_on = true;
+		break;
+	case 'o':
+		if (cone_on) {
+			if (!cone_open_on) {
+				add_cone_radian_one[0] = 3.0f;
+				add_cone_radian_one[1] = 3.0f;
+				add_cone_radian_one[2] = 3.0f;
+				add_cone_radian_one[3] = 3.0f;
+				cone_open_on = true;
+				glutTimerFunc(10, open_cone, 0);
+				glutTimerFunc(10, open_cone, 1);
+				glutTimerFunc(10, open_cone, 2);
+				glutTimerFunc(10, open_cone, 3);
+			}
+		}
+		break;
+	case 'r':
+		if (cone_on) {
+			if (!cone_open_one_on)
+			{
+				cone_open_one_on = true;
+				glutTimerFunc(1, open_cone_one, 0);
+			}
+		}
+		break;
 	}
 	glutPostRedisplay();
 }
@@ -481,6 +629,35 @@ void open_back(int value) {
 	}
 	else if (open_back_on) {
 		glutTimerFunc(1, open_back, 0);
+	}
+	glutPostRedisplay();
+}
+
+void open_cone(int value) {
+	cone_open_radian[value] += add_cone_radian_all[value];
+	if ((cone_open_radian[value] <= 0) || (cone_open_radian[value] >= 233)) {
+		cone_open_on = false;
+		add_cone_radian_all[value] *= -1;
+	}
+	else if (cone_open_on) {
+		glutTimerFunc(1, open_cone, value);
+	}
+	glutPostRedisplay();
+}
+void open_cone_one(int value) {
+	cone_open_radian[value] += add_cone_radian_one[value];
+	if ((cone_open_radian[value] <= 0) || (cone_open_radian[value] >= 120)) {
+		add_cone_radian_one[value] *= -1;
+		if (value < 3)
+		{
+			glutTimerFunc(1, open_cone_one, value + 1);
+		}
+		else {
+			cone_open_one_on = false;
+		}
+	}
+	else {
+		glutTimerFunc(1, open_cone_one, value);
 	}
 	glutPostRedisplay();
 }
