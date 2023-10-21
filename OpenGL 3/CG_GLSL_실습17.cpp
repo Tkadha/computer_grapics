@@ -475,7 +475,6 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			see_spiral = true;
 			glutTimerFunc(10, move_spiral, 0);
 		}
-
 		break;
 	case 's':
 		if (!scale_xyz) {
