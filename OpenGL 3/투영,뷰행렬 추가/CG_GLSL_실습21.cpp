@@ -235,8 +235,8 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	proj = glm::mat4(1.0f);
 	proj = glm::ortho(-2.0f, 2.0f, -2.0f, 2.0f, -2.0f, 2.0f);
 	glUniformMatrix4fv(proj_location, 1, GL_FALSE, &proj[0][0]);
-	cameraPos= glm::vec3(0.f, 0.f, -4.0f);
 
+	cameraPos= glm::vec3(0.f, 0.f, -4.0f);
 	view = glm::lookAt(cameraPos, cameraDirection, cameraUp);
 	glUniformMatrix4fv(view_location, 1, GL_FALSE, &view[0][0]);
 	draw_tank();
