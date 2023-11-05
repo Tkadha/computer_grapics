@@ -67,11 +67,11 @@ void add_shape(int);
 void move_shape(int);
 void check_slice();
 bool check_cross(const Point&, const Point&, const Point&, const Point& );
-int speed;
 
 
-
-
+int ccw(Point a, Point b, Point p);
+bool check_line_on(Point a, Point q, Point b);
+bool checking_cross(Point p1, Point q1, Point p2, Point q2);
 
 
 
@@ -414,6 +414,7 @@ std::uniform_int_distribution<int> vertex_count(3, 4);
 std::uniform_int_distribution<int> way_cos(0, 1);
 void add_shape(int value) {
 	Shape poly;
+
 	Point point;
 	RGB rgb;
 	int count= vertex_count(gen);
@@ -546,56 +547,81 @@ void check_slice() {
 	for (auto& polygon : polygons) {
 		int crosscount = 0;
 		const std::vector<Point>& vertice = polygon.getvertices();
-		if (vertice.size() == 3) {
-			//선분 교차 체크
-			for (int i = 0; i < 2; ++i) {
-				if (check_cross(mousepoint[0], mousepoint[1], vertice[i], vertice[i + 1])) {
-					++crosscount;
-				}
-			}
-			if (check_cross(mousepoint[0], mousepoint[1], vertice[2], vertice[0])) {
+		// 선분 교차 체크
+		for (int i = 0; i < vertice.size() - 1; ++i) {
+			/*if (check_cross(mousepoint[0], mousepoint[1], vertice[i], vertice[i + 1])) {
+				++crosscount;
+			}*/
+			if (checking_cross(mousepoint[0], mousepoint[1], vertice[i], vertice[i + 1])) {
 				++crosscount;
 			}
-			// 교차가 2개면 가른상태
-			if (crosscount == 2) {
-				// 원래꺼 없애고 2개로 나누기
-				std::cout << "triangle cut" << std::endl;
-			}
+		}
+		/*if (check_cross(mousepoint[0], mousepoint[1], vertice[vertice.size() - 1], vertice[0])) {
+			++crosscount;
+		}*/
 
+		if (checking_cross(mousepoint[0], mousepoint[1], vertice[vertice.size() - 1], vertice[0])) {
+			++crosscount;
 		}
-		else if (vertice.size() == 4) {
-			//선분 교차 체크
-			for (int i = 0; i < 3; ++i) {
-				if (check_cross(mousepoint[0], mousepoint[1], vertice[i], vertice[i + 1])) {
-					++crosscount;
-				}
-			}
-			if (check_cross(mousepoint[0], mousepoint[1], vertice[3], vertice[0])) {
-				++crosscount;
-			}
-			// 교차가 2개면 가른상태
-			if (crosscount == 2) {
-				// 원래꺼 없애고 2개로 나누기
-				std::cout << "rect cut" << std::endl;
-			}
+		// 교차가 2개면 가른상태
+		if (crosscount == 2) {
+			// 원래꺼 없애고 2개로 나누기
+			std::cout << vertice.size() << " cut" << std::endl;
 		}
+		if (crosscount > 0) std::cout << crosscount << std::endl;
 	}
 
 }
 
 bool check_cross(const Point& mousep1, const Point& mousep2, const Point& linep1, const Point& linep2)
 {
-	float t;
-	float s;
-	float _t;
-	float _s;
+	double t;
+	double s;
+	double _t;
+	double _s;
+	if ((linep2.y - linep1.y) * (mousep2.x - mousep1.x) - (linep2.x - linep1.x) * (mousep2.y - mousep1.y) == 0) return false;
+
+
+
 	_t = (linep2.x - linep1.x) * (mousep1.y - linep1.y) - (linep2.y - linep1.y) * (mousep1.x - linep1.x);
 	_s = (mousep2.x - mousep1.x) * (mousep1.y - linep1.y) - (mousep2.y - mousep1.y) * (mousep1.x - linep1.x);
 	t = _t/(linep2.y - linep1.y) * (mousep2.x - mousep1.x) - (linep2.x - linep1.x) * (mousep2.y - mousep1.y);
 	s = _s/(linep2.y - linep1.y) * (mousep2.x - mousep1.x) - (linep2.x - linep1.x) * (mousep2.y - mousep1.y);
-
 	if (t < 0.f || t > 1.f || s < 0.f || s > 1.f) return false;
-	if (_t == 0 && +s == 0) return false;
+	if (_t == 0 && _s == 0) return false;
+
+
 
 	return true;
+}
+
+
+int ccw(Point a, Point b, Point p) {
+	double value = (b.y - a.y) * (p.x - b.x) - (b.x - a.x) * (p.y - b.y);
+	if (value == 0)return 0;
+	else if (value > 0) return 1;
+	else if (value < 0) return -1;
+}
+
+bool check_line_on(Point a, Point q, Point b) {
+	return (q.x <= std::max(a.x, b.x) && q.x >= std::min(a.x, b.x) &&
+		    q.y <= std::max(a.y, b.y) && q.y >= std::min(a.y, b.y));
+}
+
+
+bool checking_cross(Point p1, Point q1, Point p2, Point q2) {
+
+	int o1 = ccw(p1, q1, p2);
+	int o2 = ccw(p1, q1, q2);
+	int o3 = ccw(p2, q2, p1);
+	int o4 = ccw(p2, q2, q1);
+
+	if (o1 != o2 && o3 != o4) return true;
+
+	if (o1 == 0 && check_line_on(p1, p2, q1)) return true;
+	if (o2 == 0 && check_line_on(p1, q2, q1)) return true;
+	if (o3 == 0 && check_line_on(p2, p1, q2)) return true;
+	if (o4 == 0 && check_line_on(p2, q1, q2)) return true;
+
+	return false;
 }
