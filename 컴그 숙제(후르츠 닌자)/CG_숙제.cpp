@@ -66,8 +66,6 @@ void move_box(int value);
 void add_shape(int);
 void move_shape(int);
 void check_slice();
-bool check_cross(const Point&, const Point&, const Point&, const Point& );
-
 
 int ccw(Point a, Point b, Point p);
 bool check_line_on(Point a, Point q, Point b);
@@ -516,32 +514,38 @@ void move_shape(int value) {
 		return;
 	Shape& poly = polygons[value];
 	poly.add_xy();
+
 	const std::vector<Point>& vertice = poly.getvertices();
-	if (poly.cut) {
-		if (vertice[2].y < -1.0f) {
+
+	if (vertice[2].y && vertice[1].y && vertice[0].y < -1.0f) {
+		polygons.erase(polygons.begin() + value);
+	}
+	if (poly.way == 0) {
+		if (vertice[0].x > 1.0f) {
 			polygons.erase(polygons.begin() + value);
+			//std::cout << polygons.size() << std::endl;
 		}
 	}
-	else
-	{
-		if (poly.way == 0) {
-			if (vertice[0].x > 1.0f) {
-				polygons.erase(polygons.begin() + value);
-				//std::cout << polygons.size() << std::endl;
-			}
+	else if (poly.way == 1) {
+		if (vertice[1].x < -1.0f) {
+			polygons.erase(polygons.begin() + value);
+			//std::cout << polygons.size() << std::endl;
 		}
-		else if (poly.way == 1) {
-			if (vertice[1].x < -1.0f) {
-				polygons.erase(polygons.begin() + value);
-				//std::cout << polygons.size() << std::endl;
-			}
-		}
+	}
+	if (poly.cut){
+		polygons.erase(polygons.begin() + value);
 	}
 	glutTimerFunc(10, move_shape, value);
 	glutPostRedisplay();
 }
+
+
+std::uniform_real_distribution<float> slice_x_speed(0.001, 0.003);
+std::uniform_real_distribution<float> slice_y_speed(0.004, 0.008);
 void check_slice() {
 	Point mousepoint[2];
+	Point point;
+	RGB rgb;
 	mousepoint[0] = { cutting_line[0][0],cutting_line[0][1],0.f };
 	mousepoint[1] = { cutting_line[1][0],cutting_line[1][1],0.f };
 	for (auto& polygon : polygons) {
@@ -549,52 +553,151 @@ void check_slice() {
 		const std::vector<Point>& vertice = polygon.getvertices();
 		// 선분 교차 체크
 		for (int i = 0; i < vertice.size() - 1; ++i) {
-			/*if (check_cross(mousepoint[0], mousepoint[1], vertice[i], vertice[i + 1])) {
-				++crosscount;
-			}*/
 			if (checking_cross(mousepoint[0], mousepoint[1], vertice[i], vertice[i + 1])) {
 				++crosscount;
 			}
 		}
-		/*if (check_cross(mousepoint[0], mousepoint[1], vertice[vertice.size() - 1], vertice[0])) {
-			++crosscount;
-		}*/
 
 		if (checking_cross(mousepoint[0], mousepoint[1], vertice[vertice.size() - 1], vertice[0])) {
 			++crosscount;
 		}
 		// 교차가 2개면 가른상태
 		if (crosscount == 2) {
-			// 원래꺼 없애고 2개로 나누기
 			std::cout << vertice.size() << " cut" << std::endl;
+			polygon.cut = true;
 		}
 		if (crosscount > 0) std::cout << crosscount << std::endl;
 	}
 
+
+
+	for (auto& polygon : polygons) {
+		if (polygon.cut)
+		{
+			const std::vector<Point>& vertice = polygon.getvertices();
+			const std::vector<RGB>& color = polygon.getcolor();
+			Shape poly;
+			Shape poly2;
+			Point point;
+			if (vertice.size() == 4) {
+				point = vertice[3];
+				point.x -= 0.05f;
+				point.y += 0.05f;
+				poly.addvertex(point);
+				point = vertice[0];
+				point.x -= 0.05f;
+				point.y += 0.05f;
+				poly.addvertex(point);
+				point = vertice[2];
+				point.x -= 0.05f;
+				point.y += 0.05f;
+				poly.addvertex(point);
+				poly.add_x = -slice_x_speed(gen);
+				poly.add_y = -slice_y_speed(gen);
+				poly.way = polygon.way;
+				poly.cut = false;
+				rgb = color[3];
+				poly.addcolor(rgb);
+				rgb = color[0];
+				poly.addcolor(rgb);
+				rgb = color[2];
+				poly.addcolor(rgb);
+
+				point = vertice[1];
+				point.x += 0.05f;
+				poly2.addvertex(point);
+				point = vertice[2];
+				point.x += 0.05f;
+				poly2.addvertex(point);
+				point = vertice[0];
+				point.x += 0.05f;
+				poly2.addvertex(point);
+				poly2.add_x = slice_x_speed(gen);
+				poly2.add_y = -slice_y_speed(gen);
+				poly2.way = polygon.way;
+				poly2.cut = false;
+				rgb = color[1];
+				poly2.addcolor(rgb);
+				rgb = color[2];
+				poly2.addcolor(rgb);
+				rgb = color[0];
+				poly2.addcolor(rgb);
+				polygons.push_back(poly);
+				polygons.push_back(poly2);
+				glutTimerFunc(10, move_shape, polygons.size() - 2);
+				glutTimerFunc(10, move_shape, polygons.size() - 1);
+			}
+			else if (vertice.size() == 3) {
+
+				point = vertice[2];
+				point.x += vertice[1].x;
+				point.y += vertice[1].y;
+				point.z += vertice[1].z;
+				point.x /= 2;
+				point.y /= 2;
+				point.z /= 2;
+				point.x -= 0.05f;
+				point.y += 0.05f;
+				poly.addvertex(point);
+				point = vertice[2];
+				point.x -= 0.05f;
+				point.y += 0.05f;
+				poly.addvertex(point);
+				point = vertice[0];
+				point.x -= 0.05f;
+				point.y += 0.05f;
+				poly.addvertex(point);
+				poly.add_x = -slice_x_speed(gen);
+				poly.add_y = -slice_y_speed(gen);
+				poly.way = polygon.way;
+				poly.cut = false;
+				rgb.r = (color[2].r + color[1].r) / 2;
+				rgb.g = (color[2].g + color[1].g) / 2;
+				rgb.b = (color[2].b + color[1].b) / 2;
+				poly.addcolor(rgb);
+				rgb = color[2];
+				poly.addcolor(rgb);
+				rgb = color[0];
+				poly.addcolor(rgb);
+
+				point = vertice[2];
+				point.x += vertice[1].x;
+				point.y += vertice[1].y;
+				point.z += vertice[1].z;
+				point.x /= 2;
+				point.y /= 2;
+				point.z /= 2;
+				point.x += 0.05f;
+				poly2.addvertex(point);
+				point = vertice[0];
+				point.x += 0.05f;
+				poly2.addvertex(point);
+				point = vertice[1];
+				point.x += 0.05f;
+				poly2.addvertex(point);
+				poly2.add_x = slice_x_speed(gen);
+				poly2.add_y = -slice_y_speed(gen);
+				poly2.way = polygon.way;
+				poly2.cut = false;
+				rgb.r = (color[2].r + color[1].r) / 2;
+				rgb.g = (color[2].g + color[1].g) / 2;
+				rgb.b = (color[2].b + color[1].b) / 2;
+				poly2.addcolor(rgb);
+				rgb = color[0];
+				poly2.addcolor(rgb);
+				rgb = color[1];
+				poly2.addcolor(rgb);
+
+
+				polygons.push_back(poly);
+				polygons.push_back(poly2);
+				glutTimerFunc(10, move_shape, polygons.size() - 2);
+				glutTimerFunc(10, move_shape, polygons.size() - 1);
+			}
+		}
+	}
+
 }
-
-bool check_cross(const Point& mousep1, const Point& mousep2, const Point& linep1, const Point& linep2)
-{
-	double t;
-	double s;
-	double _t;
-	double _s;
-	if ((linep2.y - linep1.y) * (mousep2.x - mousep1.x) - (linep2.x - linep1.x) * (mousep2.y - mousep1.y) == 0) return false;
-
-
-
-	_t = (linep2.x - linep1.x) * (mousep1.y - linep1.y) - (linep2.y - linep1.y) * (mousep1.x - linep1.x);
-	_s = (mousep2.x - mousep1.x) * (mousep1.y - linep1.y) - (mousep2.y - mousep1.y) * (mousep1.x - linep1.x);
-	t = _t/(linep2.y - linep1.y) * (mousep2.x - mousep1.x) - (linep2.x - linep1.x) * (mousep2.y - mousep1.y);
-	s = _s/(linep2.y - linep1.y) * (mousep2.x - mousep1.x) - (linep2.x - linep1.x) * (mousep2.y - mousep1.y);
-	if (t < 0.f || t > 1.f || s < 0.f || s > 1.f) return false;
-	if (_t == 0 && _s == 0) return false;
-
-
-
-	return true;
-}
-
 
 int ccw(Point a, Point b, Point p) {
 	double value = (b.y - a.y) * (p.x - b.x) - (b.x - a.x) * (p.y - b.y);
@@ -616,8 +719,10 @@ bool checking_cross(Point p1, Point q1, Point p2, Point q2) {
 	int o3 = ccw(p2, q2, p1);
 	int o4 = ccw(p2, q2, q1);
 
-	if (o1 != o2 && o3 != o4) return true;
-
+	if (o1 != o2 && o3 != o4)
+	{
+		return true;
+	}
 	if (o1 == 0 && check_line_on(p1, p2, q1)) return true;
 	if (o2 == 0 && check_line_on(p1, q2, q1)) return true;
 	if (o3 == 0 && check_line_on(p2, p1, q2)) return true;
