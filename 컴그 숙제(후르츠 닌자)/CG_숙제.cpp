@@ -107,7 +107,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(Width, Height);
-	glutCreateWindow("Example1");
+	glutCreateWindow("Computer Grapics - Let's Slice");
 	glewExperimental = GL_TRUE;
 	glewInit();
 	make_shaderProgram();
@@ -376,10 +376,12 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		adding_x += 0.005f;
 		adding_y += 0.0005f;
 		for (auto& polygon : polygons) {
-			if(polygon.add_x>0)
-				polygon.add_x += 0.005f;
-			else {
-				polygon.add_x -= 0.005f;
+			if (polygon.add_y != 0) {
+				if (polygon.add_x > 0)
+					polygon.add_x += 0.005f;
+				else {
+					polygon.add_x -= 0.005f;
+				}
 			}
 		}
 		break;
@@ -514,27 +516,45 @@ void move_shape(int value) {
 		return;
 	Shape& poly = polygons[value];
 	poly.add_xy();
-
 	const std::vector<Point>& vertice = poly.getvertices();
-
-	if (vertice[2].y && vertice[1].y && vertice[0].y < -1.0f) {
-		polygons.erase(polygons.begin() + value);
-	}
-	if (poly.way == 0) {
-		if (vertice[0].x > 1.0f) {
-			polygons.erase(polygons.begin() + value);
-			//std::cout << polygons.size() << std::endl;
+	if (poly.add_y != 0.f) {
+		for (auto& vertex : vertice) {
+			if (vertex.x >= box[0][0] && vertex.x <= box[2][0]) {
+				if (vertex.y >= box[0][1] - 0.01f && vertex.y <= box[0][1]) {
+					poly.add_y = 0.f;
+					poly.add_x = box_move_way;
+					break;
+				}
+			}
 		}
 	}
-	else if (poly.way == 1) {
-		if (vertice[1].x < -1.0f) {
-			polygons.erase(polygons.begin() + value);
-			//std::cout << polygons.size() << std::endl;
+	else {
+		if ((poly.add_x < box_move_way)||(poly.add_x>box_move_way)) {
+			poly.add_x *= -1;
 		}
 	}
-	if (poly.cut){
-		polygons.erase(polygons.begin() + value);
+	if (poly.add_y != 0) {
+		if (vertice[2].y && vertice[1].y && vertice[0].y < -1.0f) {
+			polygons.erase(polygons.begin() + value);
+		}
+		if (poly.way == 0) {
+			if (vertice[0].x > 1.0f) {
+				polygons.erase(polygons.begin() + value);
+				//std::cout << polygons.size() << std::endl;
+			}
+		}
+		else if (poly.way == 1) {
+			if (vertice[1].x < -1.0f) {
+				polygons.erase(polygons.begin() + value);
+				//std::cout << polygons.size() << std::endl;
+			}
+		}
+		if (poly.cut) {
+			polygons.erase(polygons.begin() + value);
+		}
 	}
+	if (value >= polygons.size())
+		return;
 	glutTimerFunc(10, move_shape, value);
 	glutPostRedisplay();
 }
@@ -549,24 +569,26 @@ void check_slice() {
 	mousepoint[0] = { cutting_line[0][0],cutting_line[0][1],0.f };
 	mousepoint[1] = { cutting_line[1][0],cutting_line[1][1],0.f };
 	for (auto& polygon : polygons) {
-		int crosscount = 0;
-		const std::vector<Point>& vertice = polygon.getvertices();
-		// 선분 교차 체크
-		for (int i = 0; i < vertice.size() - 1; ++i) {
-			if (checking_cross(mousepoint[0], mousepoint[1], vertice[i], vertice[i + 1])) {
+		if (polygon.add_y != 0.f) {
+			int crosscount = 0;
+			const std::vector<Point>& vertice = polygon.getvertices();
+			// 선분 교차 체크
+			for (int i = 0; i < vertice.size() - 1; ++i) {
+				if (checking_cross(mousepoint[0], mousepoint[1], vertice[i], vertice[i + 1])) {
+					++crosscount;
+				}
+			}
+
+			if (checking_cross(mousepoint[0], mousepoint[1], vertice[vertice.size() - 1], vertice[0])) {
 				++crosscount;
 			}
+			// 교차가 2개면 가른상태
+			if (crosscount == 2) {
+				std::cout << vertice.size() << " cut" << std::endl;
+				polygon.cut = true;
+			}
+			if (crosscount > 0) std::cout << crosscount << std::endl;
 		}
-
-		if (checking_cross(mousepoint[0], mousepoint[1], vertice[vertice.size() - 1], vertice[0])) {
-			++crosscount;
-		}
-		// 교차가 2개면 가른상태
-		if (crosscount == 2) {
-			std::cout << vertice.size() << " cut" << std::endl;
-			polygon.cut = true;
-		}
-		if (crosscount > 0) std::cout << crosscount << std::endl;
 	}
 
 
@@ -687,7 +709,6 @@ void check_slice() {
 				poly2.addcolor(rgb);
 				rgb = color[1];
 				poly2.addcolor(rgb);
-
 
 				polygons.push_back(poly);
 				polygons.push_back(poly2);
