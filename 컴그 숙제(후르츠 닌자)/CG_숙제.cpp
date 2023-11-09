@@ -24,6 +24,7 @@ public:
 	int way;
 	float add_x, add_y;
 	bool cut;
+	Point startpoint, endpoint;
 
 	void addvertex(Point point) {
 		vertice.push_back(point);
@@ -92,6 +93,7 @@ float cutting_line_rgb[2][3];
 bool mouse_down;
 
 GLuint polygonvbo[2];
+GLuint coursevbo;
 
 float adding_x, adding_y;
 int add_speed;
@@ -99,6 +101,7 @@ int add_speed;
 std::vector<Shape> polygons;
 
 bool fill_line;
+bool see_course;
 
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
@@ -130,6 +133,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 
 
 	{
+		std::cout << "l/L: 경로 보이기/ 숨기기" << std::endl;
 		std::cout << "m/M: 그리기 모드 변경 LINE/FILL" << std::endl;
 		std::cout << "-/+: 도형 속도 감소/증가" << std::endl;
 		std::cout << "q/Q: 프로그램 종료" << std::endl;
@@ -185,6 +189,19 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 			rgb_color.push_back(rgb.g);
 			rgb_color.push_back(rgb.b);
 		}
+		if (see_course) {
+			std::vector<float> course_pos;
+			course_pos.push_back(poly.startpoint.x);
+			course_pos.push_back(poly.startpoint.y);
+			course_pos.push_back(poly.startpoint.z);
+			course_pos.push_back(poly.endpoint.x);
+			course_pos.push_back(poly.endpoint.y);
+			course_pos.push_back(poly.endpoint.z);
+			glBindBuffer(GL_ARRAY_BUFFER, coursevbo);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(float) * course_pos.size(), course_pos.data(), GL_STATIC_DRAW);
+			glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+			glDrawArrays(GL_LINES, 0, 2);
+		}
 		glBindBuffer(GL_ARRAY_BUFFER, polygonvbo[0]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(float) * vertex_pos.size(), vertex_pos.data(), GL_STATIC_DRAW);
 		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
@@ -198,6 +215,7 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		}
 		else	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glDrawArrays(GL_TRIANGLE_FAN, 0, vertex_pos.size() / 3);
+
 	}
 	if (mouse_down) {
 		glBindBuffer(GL_ARRAY_BUFFER, linevbo[0]);
@@ -298,6 +316,7 @@ void initbuffer() {
 	glGenBuffers(2, boxvbo);
 	glGenBuffers(2, polygonvbo);
 	glGenBuffers(2, linevbo);
+	glGenBuffers(1, &coursevbo);
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, boxvbo[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(box), box, GL_DYNAMIC_DRAW);
@@ -328,7 +347,6 @@ void Mouse(int button, int state, int x, int y)
 			mouse_down = false;
 
 			// 여기서 도형 잘리는지 체크
-			std::cout << "cutting start" << std::endl;
 			check_slice();
 			//
 			cutting_line[0][0] = mousex;
@@ -356,6 +374,13 @@ void MouseMotion(int x, int y) {
 GLvoid Keyboard(unsigned char key, int x, int y)
 {
 	switch (key) {
+	case 'l':
+	case 'L':
+		if (see_course)
+			see_course = false;
+		else
+			see_course = true;
+		break;
 	case 'm':
 	case 'M':
 		if (fill_line)
@@ -506,6 +531,11 @@ void add_shape(int value) {
 			poly.addcolor(rgb);
 		}
 	}
+	poly.startpoint.x = point.x;
+	poly.startpoint.y = point.y - 0.1f;
+	poly.endpoint.x = point.x + poly.add_x * 1000;
+	poly.endpoint.y = point.y + poly.add_y * 1000;
+
 	polygons.push_back(poly);
 	glutTimerFunc(10, move_shape, polygons.size() - 1);
 	glutTimerFunc(add_speed, add_shape, value);
@@ -515,6 +545,9 @@ void move_shape(int value) {
 	if (value >= polygons.size())
 		return;
 	Shape& poly = polygons[value];
+	float speed_y, speed_x;
+	speed_x = poly.add_x;
+	speed_y = poly.add_y;
 	poly.add_xy();
 	const std::vector<Point>& vertice = poly.getvertices();
 	if (poly.add_y != 0.f) {
@@ -525,6 +558,13 @@ void move_shape(int value) {
 					poly.add_x = box_move_way;
 					break;
 				}
+			}
+		}
+		for (auto& vertex : vertice) {
+			if (vertex.y < box[0][1] - 0.01f) {
+				poly.add_y = speed_y;
+				poly.add_x = speed_x;
+				break;
 			}
 		}
 	}
@@ -584,10 +624,8 @@ void check_slice() {
 			}
 			// 교차가 2개면 가른상태
 			if (crosscount == 2) {
-				std::cout << vertice.size() << " cut" << std::endl;
 				polygon.cut = true;
 			}
-			if (crosscount > 0) std::cout << crosscount << std::endl;
 		}
 	}
 
@@ -644,10 +682,6 @@ void check_slice() {
 				poly2.addcolor(rgb);
 				rgb = color[0];
 				poly2.addcolor(rgb);
-				polygons.push_back(poly);
-				polygons.push_back(poly2);
-				glutTimerFunc(10, move_shape, polygons.size() - 2);
-				glutTimerFunc(10, move_shape, polygons.size() - 1);
 			}
 			else if (vertice.size() == 3) {
 
@@ -709,12 +743,11 @@ void check_slice() {
 				poly2.addcolor(rgb);
 				rgb = color[1];
 				poly2.addcolor(rgb);
-
-				polygons.push_back(poly);
-				polygons.push_back(poly2);
-				glutTimerFunc(10, move_shape, polygons.size() - 2);
-				glutTimerFunc(10, move_shape, polygons.size() - 1);
 			}
+			polygons.push_back(poly);
+			polygons.push_back(poly2);
+			glutTimerFunc(10, move_shape, polygons.size() - 2);
+			glutTimerFunc(10, move_shape, polygons.size() - 1);
 		}
 	}
 
