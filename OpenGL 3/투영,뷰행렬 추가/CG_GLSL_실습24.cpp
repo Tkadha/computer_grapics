@@ -31,7 +31,9 @@ void settingcolor();
 void rotating_camera(int);
 void robot_jump(int);
 void robot_down(int);
+void obstacle_down(int);
 void setting_floor_pos();
+void robot_draw();
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID;
@@ -77,6 +79,7 @@ GLfloat leftleg_RGB[6][12];
 GLfloat rightleg_RGB[6][12];
 GLfloat nose_RGB[6][12];
 float obstacle_pos[3][2];
+float obstacle_box_y[3];
 float floor_pos[9][9][2];
 
 float swing_arm_angle_add;
@@ -112,7 +115,7 @@ GLUquadricObj* qobj;
 std::random_device rd;
 std::mt19937 gen(rd());
 std::uniform_real_distribution<> color(0.1, 1);
-std::uniform_real_distribution<> pos(-0.9, 0.9);
+std::uniform_int_distribution<> pos(2, 7);
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
 	//--- 윈도우 생성하기
@@ -124,14 +127,13 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glewExperimental = GL_TRUE;
 	glewInit();
 	make_shaderProgram();
-
+	setting_floor_pos();
 	settingcolor();
 	{	//설명
 		std::cout << "w/a/s/d: 로봇 이동" << std::endl;
 		std::cout << "+/-: 로봇 이동속도 증가/감소" << std::endl;
 		std::cout << "j: 로봇 점프" << std::endl;
 		std::cout << "i: 리셋" << std::endl;
-		std::cout << "o/O: 앞면 열기/닫기" << std::endl;
 		std::cout << "z/Z: 카메라 앞/뒤 이동" << std::endl;
 		std::cout << "x/X: 카메라 좌/우 이동" << std::endl;
 		std::cout << "y/Y: 카메라 화면 중심 기준 공전" << std::endl;
@@ -162,7 +164,6 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 		camera_y = 0.4f;
 		camera_z = 1.f;
 	}
-	setting_floor_pos();
 
 	qobj = gluNewQuadric();
 	gluQuadricDrawStyle(qobj, GLU_FILL);
@@ -180,7 +181,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 {
 	GLfloat rColor, gColor, bColor;
-	rColor = gColor = bColor = 0.5f;
+	rColor = gColor = bColor = 0.4f;
 	glClearColor(rColor, gColor, bColor, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -243,9 +244,7 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		}
 	}
 
-
-
-
+	robot_draw();
 
 
 	glFrontFace(GL_CCW);
@@ -255,9 +254,9 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 
 	for (int i = 0; i < 3; ++i) {
 		obstacle = trans;
-		obstacle = glm::translate(obstacle, glm::vec3(obstacle_pos[i][0], -side_length * 5, obstacle_pos[i][1]));
+		obstacle = glm::translate(obstacle, glm::vec3(obstacle_pos[i][0], -side_length * 5 + obstacle_box_y[i], obstacle_pos[i][1]));
 		glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(obstacle));
-		//drawbox();
+		drawbox();
 	}
 	for (int i = 0; i < 2; ++i) {
 		for (int j = 0; j < 2; ++j) {
@@ -269,177 +268,6 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		}
 	}
 
-
-
-
-
-	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[2]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 몸 & 머리
-	glm::mat4 body = trans;
-	body = glm::translate(body, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
-	if (forward) {
-		body = glm::rotate(body, glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	else if (left) {
-		body = glm::rotate(body, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	else if (right) {
-		body = glm::rotate(body, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	body = glm::scale(body, glm::vec3(0.4f, 1.f, 0.4f));
-	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(body));
-	drawbox();
-
-	glm::mat4 head = trans;
-	head = glm::translate(head, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
-	head = glm::translate(head, glm::vec3(0.f, 0.25f, 0.f));
-	if (forward) {
-		head = glm::rotate(head, glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	else if (left) {
-		head = glm::rotate(head, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	else if (right) {
-		head = glm::rotate(head, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	head = glm::scale(head, glm::vec3(0.25f, 0.25f, 0.25f));
-	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(head));
-	drawbox();
-
-	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[7]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 코
-	glm::mat4 nose = head;
-	nose = glm::translate(nose, glm::vec3(0.f, -0.15f, 0.25f));
-	if (forward) {
-		nose = glm::rotate(nose, glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	else if (left) {
-		nose = glm::rotate(nose, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	else if (right) {
-		nose = glm::rotate(nose, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	nose = glm::scale(nose, glm::vec3(0.25f, 0.5f, 0.75f));
-	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(nose));
-	drawbox();
-
-
-	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[3]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 왼팔
-	glm::mat4 arm = trans;
-	arm = glm::translate(arm, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
-	if (back) {
-		arm = glm::translate(arm, glm::vec3(0.1f, 0.f, 0.f));
-	}
-	else if (left) {
-		arm = glm::translate(arm, glm::vec3(0.f, 0.f, 0.1f));
-	}
-	else if (right) {
-		arm = glm::translate(arm, glm::vec3(0.f, 0.f, -0.1f));
-	}
-	else {
-		arm = glm::translate(arm, glm::vec3(-0.1f, 0.f, 0.f));
-	}
-	if (left) {
-		arm = glm::rotate(arm, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	else if (right) {
-		arm = glm::rotate(arm, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	arm = glm::translate(arm, glm::vec3(0.f, 0.1f, 0.f));
-	arm = glm::rotate(arm, glm::radians(-swing_arm_angle), glm::vec3(1.f, 0.f, 0.f));
-	arm = glm::translate(arm, glm::vec3(0.f, -0.1f, 0.f));
-	arm = glm::scale(arm, glm::vec3(0.1f, 0.75f, 0.1f));
-	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(arm));
-	drawbox();
-
-	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[4]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 오른팔
-	arm = trans;
-	arm = glm::translate(arm, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
-	if (back) {
-		arm = glm::translate(arm, glm::vec3(-0.1f, 0.f, 0.f));
-	}
-	else if (left) {
-		arm = glm::translate(arm, glm::vec3(0.f, 0.f, -0.1f));
-	}
-	else if (right) {
-		arm = glm::translate(arm, glm::vec3(0.f, 0.f, 0.1f));
-	}
-	else {
-		arm = glm::translate(arm, glm::vec3(0.1f, 0.f, 0.f));
-	}
-	if (left) {
-		arm = glm::rotate(arm, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	else if (right) {
-		arm = glm::rotate(arm, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	arm = glm::translate(arm, glm::vec3(0.f, 0.1f, 0.f));
-	arm = glm::rotate(arm, glm::radians(swing_arm_angle), glm::vec3(1.f, 0.f, 0.f));
-	arm = glm::translate(arm, glm::vec3(0.f, -0.1f, 0.f));
-	arm = glm::scale(arm, glm::vec3(0.1f, 0.75f, 0.1f));
-	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(arm));
-	drawbox();
-
-	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[5]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 왼다리
-
-	glm::mat4 leg = trans;
-	leg = glm::translate(leg, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
-	if (back) {
-		leg = glm::translate(leg, glm::vec3(0.025f, -0.3f, 0.f));
-	}
-	else if (left) {
-		leg = glm::translate(leg, glm::vec3(0.f, -0.3f, -0.025f));
-	}
-	else if (right) {
-		leg = glm::translate(leg, glm::vec3(0.f, -0.3f, 0.025f));
-	}
-	else {
-		leg = glm::translate(leg, glm::vec3(-0.025f, -0.3f, 0.f));
-	}
-	if (left) {
-		leg = glm::rotate(leg, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	else if (right) {
-		leg = glm::rotate(leg, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	leg = glm::translate(leg, glm::vec3(0.f, 0.1f, 0.f));
-	leg = glm::rotate(leg, glm::radians(swing_leg_angle), glm::vec3(1.f, 0.f, 0.f));
-	leg = glm::translate(leg, glm::vec3(0.f, -0.1f, 0.f));
-	leg = glm::scale(leg, glm::vec3(0.1f, 0.75f, 0.1f));
-	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(leg));
-	drawbox();
-
-	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[6]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 왼다리
-	leg = trans;
-	leg = glm::translate(leg, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
-	if (back) {
-		leg = glm::translate(leg, glm::vec3(-0.025f, -0.3f, 0.f));
-	}
-	else if (left) {
-		leg = glm::translate(leg, glm::vec3(0.f, -0.3f, 0.025f));
-	}
-	else if (right) {
-		leg = glm::translate(leg, glm::vec3(0.f, -0.3f, -0.025f));
-	}
-	else {
-		leg = glm::translate(leg, glm::vec3(0.025f, -0.3f, 0.f));
-	}
-	if (left) {
-		leg = glm::rotate(leg, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	else if (right) {
-		leg = glm::rotate(leg, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
-	}
-	leg = glm::translate(leg, glm::vec3(0.f, 0.1f, 0.f));
-	leg = glm::rotate(leg, glm::radians(-swing_leg_angle), glm::vec3(1.f, 0.f, 0.f));
-	leg = glm::translate(leg, glm::vec3(0.f, -0.1f, 0.f));
-	leg = glm::scale(leg, glm::vec3(0.1f, 0.75f, 0.1f));
-	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(leg));
-	drawbox();
 
 
 	glDisableVertexAttribArray(ColorLocation);
@@ -724,6 +552,16 @@ void robot_move(int value) {
 			if (robot_z < -0.9f)
 				robot_z += 0.01f * speed;
 		}
+		if (robot_y <= 0.01f) {
+			for (int i = 0; i < 3; ++i) {
+				if (obstacle_box_y[i] > -side_length) {
+					if ((obstacle_pos[i][0] - side_length <= robot_x) && (robot_x <= obstacle_pos[i][0] + side_length)) {
+						if (robot_z < obstacle_pos[i][1] + side_length * 1.5f)
+							robot_z += 0.01f * speed;
+					}
+				}
+			}
+		}
 		if (robot_z < -1.5f) {
 			forward = false;
 			back = true;
@@ -735,6 +573,17 @@ void robot_move(int value) {
 			if (robot_z > 1.3f)
 				robot_z -= 0.01f * speed;
 		}
+		if (robot_y <= 0.01f) {
+			for (int i = 0; i < 3; ++i) {
+				if (obstacle_box_y[i] > -side_length) {
+					if ((obstacle_pos[i][0] - side_length <= robot_x) && (robot_x <= obstacle_pos[i][0] + side_length)) {
+						if (robot_z > obstacle_pos[i][1] - side_length * 1.5f)
+							robot_z -= 0.01f * speed;
+					}
+				}
+			}
+		}
+
 		if (robot_z > 1.7f) {
 			forward = true;
 			back = false;
@@ -746,6 +595,17 @@ void robot_move(int value) {
 			if (robot_x < -1.2f)
 				robot_x += 0.01f * speed;
 		}
+		if (robot_y <= 0.01f) {
+			for (int i = 0; i < 3; ++i) {
+				if (obstacle_box_y[i] > -side_length) {
+					if ((obstacle_pos[i][1] - side_length <= robot_z) && (robot_z <= obstacle_pos[i][1] + side_length)) {
+						if (robot_x < obstacle_pos[i][0] + side_length * 1.5f)
+							robot_x += 0.01f * speed;
+					}
+				}
+			}
+		}
+
 		if (robot_x < -1.5f) {
 			left = false;
 			right = true;
@@ -756,6 +616,16 @@ void robot_move(int value) {
 		if ((robot_z < -1.2f) || (robot_z > 1.5f)) {
 			if (robot_x > 1.2f)
 				robot_x -= 0.01f * speed;
+		}
+		if (robot_y <= 0.01f) {
+			for (int i = 0; i < 3; ++i) {
+				if (obstacle_box_y[i] > - side_length) {
+					if ((obstacle_pos[i][1] - side_length <= robot_z) && (robot_z <= obstacle_pos[i][1] + side_length)) {
+						if (robot_x > obstacle_pos[i][0] - side_length * 1.5f)
+							robot_x -= 0.01f * speed;
+					}
+				}
+			}
 		}
 		if (robot_x > 1.5f) {
 			left = true;
@@ -789,9 +659,10 @@ void settingcolor() {
 		}
 	}
 	for (int i = 0; i < 3; ++i) {
-		for (int j = 0; j < 2; ++j) {
-			obstacle_pos[i][j] = pos(gen);
-		}
+		int x_floor = pos(gen);
+		int z_floor = pos(gen);
+		obstacle_pos[i][0] = floor_pos[x_floor][z_floor][0];
+		obstacle_pos[i][1] = floor_pos[x_floor][z_floor][1];
 	}
 	body_RGB[0][0] = color(gen);
 	body_RGB[0][1] = color(gen);
@@ -866,15 +737,22 @@ void robot_down(int value) {
 		for (int i = 0; i < 3; ++i) {
 			if ((obstacle_pos[i][0] - side_length <= robot_x) && (robot_x <= obstacle_pos[i][0] + side_length)) {
 				if ((obstacle_pos[i][1] - side_length <= robot_z) && (robot_z <= obstacle_pos[i][1] + side_length)) {
-					if (-0.6f + robot_y <= -0.3) {
-						jump = false;
+					if (-0.6f + robot_y <= -0.3f + obstacle_box_y[i]) {
+						glutTimerFunc(10, obstacle_down, i);
 						break;
 					}
 				}
 			}
 		}
 	}
-	if (jump) glutTimerFunc(10, robot_down, value); 
+	if (jump) glutTimerFunc(10, robot_down, value);
+
+	glutPostRedisplay();
+}
+void obstacle_down(int value) {
+	obstacle_box_y[value] -= 0.01f;
+	if(obstacle_box_y[value] > -side_length-0.1f) glutTimerFunc(10, obstacle_down, value);
+
 
 	glutPostRedisplay();
 }
@@ -886,9 +764,187 @@ void setting_floor_pos() {
 		for (int j = 0; j < 9; ++j) {
 			floor_pos[i][j][0] = x;
 			floor_pos[i][j][1] = z;
-			x += side_length*2;
+			x += side_length * 2;
 		}
 		x = -side_length * 8;
 		z += side_length * 2;
 	}
+}
+
+void robot_draw() {
+	glm::mat4 trans = glm::mat4(1.0f);
+	int PosLocation = glGetAttribLocation(shaderProgramID, "in_Position"); //	: 0
+	int ColorLocation = glGetAttribLocation(shaderProgramID, "in_Color"); //	: 1
+	glEnableVertexAttribArray(PosLocation);
+	glEnableVertexAttribArray(ColorLocation);
+	unsigned int shape_location = glGetUniformLocation(shaderProgramID, "transform");
+
+	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[2]);
+	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 몸 & 머리
+	glm::mat4 body = trans;
+	body = glm::translate(body, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
+	if (forward) {
+		body = glm::rotate(body, glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	else if (left) {
+		body = glm::rotate(body, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	else if (right) {
+		body = glm::rotate(body, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	body = glm::scale(body, glm::vec3(0.4f, 1.f, 0.4f));
+	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(body));
+	drawbox();
+
+	glm::mat4 head = trans;
+	head = glm::translate(head, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
+	head = glm::translate(head, glm::vec3(0.f, 0.25f, 0.f));
+	if (forward) {
+		head = glm::rotate(head, glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	else if (left) {
+		head = glm::rotate(head, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	else if (right) {
+		head = glm::rotate(head, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	head = glm::scale(head, glm::vec3(0.25f, 0.25f, 0.25f));
+	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(head));
+	drawbox();
+
+	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[7]);
+	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 코
+	glm::mat4 nose = head;
+	nose = glm::translate(nose, glm::vec3(0.f, -0.15f, 0.25f));
+	if (forward) {
+		nose = glm::rotate(nose, glm::radians(180.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	else if (left) {
+		nose = glm::rotate(nose, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	else if (right) {
+		nose = glm::rotate(nose, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	nose = glm::scale(nose, glm::vec3(0.25f, 0.5f, 0.75f));
+	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(nose));
+	drawbox();
+
+
+	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[3]);
+	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 왼팔
+	glm::mat4 arm = trans;
+	arm = glm::translate(arm, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
+	if (back) {
+		arm = glm::translate(arm, glm::vec3(0.1f, 0.f, 0.f));
+	}
+	else if (left) {
+		arm = glm::translate(arm, glm::vec3(0.f, 0.f, 0.1f));
+	}
+	else if (right) {
+		arm = glm::translate(arm, glm::vec3(0.f, 0.f, -0.1f));
+	}
+	else {
+		arm = glm::translate(arm, glm::vec3(-0.1f, 0.f, 0.f));
+	}
+	if (left) {
+		arm = glm::rotate(arm, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	else if (right) {
+		arm = glm::rotate(arm, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	arm = glm::translate(arm, glm::vec3(0.f, 0.1f, 0.f));
+	arm = glm::rotate(arm, glm::radians(-swing_arm_angle), glm::vec3(1.f, 0.f, 0.f));
+	arm = glm::translate(arm, glm::vec3(0.f, -0.1f, 0.f));
+	arm = glm::scale(arm, glm::vec3(0.1f, 0.75f, 0.1f));
+	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(arm));
+	drawbox();
+
+	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[4]);
+	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 오른팔
+	arm = trans;
+	arm = glm::translate(arm, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
+	if (back) {
+		arm = glm::translate(arm, glm::vec3(-0.1f, 0.f, 0.f));
+	}
+	else if (left) {
+		arm = glm::translate(arm, glm::vec3(0.f, 0.f, -0.1f));
+	}
+	else if (right) {
+		arm = glm::translate(arm, glm::vec3(0.f, 0.f, 0.1f));
+	}
+	else {
+		arm = glm::translate(arm, glm::vec3(0.1f, 0.f, 0.f));
+	}
+	if (left) {
+		arm = glm::rotate(arm, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	else if (right) {
+		arm = glm::rotate(arm, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	arm = glm::translate(arm, glm::vec3(0.f, 0.1f, 0.f));
+	arm = glm::rotate(arm, glm::radians(swing_arm_angle), glm::vec3(1.f, 0.f, 0.f));
+	arm = glm::translate(arm, glm::vec3(0.f, -0.1f, 0.f));
+	arm = glm::scale(arm, glm::vec3(0.1f, 0.75f, 0.1f));
+	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(arm));
+	drawbox();
+
+	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[5]);
+	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 왼다리
+
+	glm::mat4 leg = trans;
+	leg = glm::translate(leg, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
+	if (back) {
+		leg = glm::translate(leg, glm::vec3(0.025f, -0.3f, 0.f));
+	}
+	else if (left) {
+		leg = glm::translate(leg, glm::vec3(0.f, -0.3f, -0.025f));
+	}
+	else if (right) {
+		leg = glm::translate(leg, glm::vec3(0.f, -0.3f, 0.025f));
+	}
+	else {
+		leg = glm::translate(leg, glm::vec3(-0.025f, -0.3f, 0.f));
+	}
+	if (left) {
+		leg = glm::rotate(leg, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	else if (right) {
+		leg = glm::rotate(leg, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	leg = glm::translate(leg, glm::vec3(0.f, 0.1f, 0.f));
+	leg = glm::rotate(leg, glm::radians(swing_leg_angle), glm::vec3(1.f, 0.f, 0.f));
+	leg = glm::translate(leg, glm::vec3(0.f, -0.1f, 0.f));
+	leg = glm::scale(leg, glm::vec3(0.1f, 0.75f, 0.1f));
+	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(leg));
+	drawbox();
+
+	glBindBuffer(GL_ARRAY_BUFFER, colorvbo[6]);
+	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);	// 왼다리
+	leg = trans;
+	leg = glm::translate(leg, glm::vec3(robot_x, -0.6f + robot_y, robot_z));
+	if (back) {
+		leg = glm::translate(leg, glm::vec3(-0.025f, -0.3f, 0.f));
+	}
+	else if (left) {
+		leg = glm::translate(leg, glm::vec3(0.f, -0.3f, 0.025f));
+	}
+	else if (right) {
+		leg = glm::translate(leg, glm::vec3(0.f, -0.3f, -0.025f));
+	}
+	else {
+		leg = glm::translate(leg, glm::vec3(0.025f, -0.3f, 0.f));
+	}
+	if (left) {
+		leg = glm::rotate(leg, glm::radians(-90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	else if (right) {
+		leg = glm::rotate(leg, glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+	}
+	leg = glm::translate(leg, glm::vec3(0.f, 0.1f, 0.f));
+	leg = glm::rotate(leg, glm::radians(-swing_leg_angle), glm::vec3(1.f, 0.f, 0.f));
+	leg = glm::translate(leg, glm::vec3(0.f, -0.1f, 0.f));
+	leg = glm::scale(leg, glm::vec3(0.1f, 0.75f, 0.1f));
+	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(leg));
+	drawbox();
+
 }
