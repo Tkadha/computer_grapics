@@ -30,50 +30,51 @@ void rotate_y(int);
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID;
-GLuint vao, cubevbo[2], cube_ebo, tetravbo[2], tetra_ebo;
+GLuint vao, cubevbo[2], tetravbo[2], tetra_ebo;
 
-GLfloat cube[8][3] = {
-	{ -side_length, side_length, side_length},
-	{ -side_length, -side_length, side_length},
-	{ side_length, -side_length, side_length},
-	{ side_length, side_length, side_length},
-	{ -side_length, side_length, -side_length},
-	{ -side_length, -side_length, -side_length},
-	{ side_length, -side_length, -side_length},
-	{ side_length, side_length, -side_length},
+GLfloat cube[6][12] = {
+	{ -side_length, -side_length, side_length,
+	  -side_length,  side_length, side_length,	//앞
+	   side_length,  side_length, side_length,
+	   side_length, -side_length, side_length},
+
+	{ -side_length, -side_length,  -side_length,
+	  -side_length,  side_length,  -side_length,	//오른쪽
+	  -side_length,  side_length, side_length,
+	  -side_length, -side_length, side_length },
+
+	{  side_length, -side_length, side_length,
+	   side_length,  side_length, side_length,	//왼쪽
+	   side_length,  side_length,  -side_length,
+	   side_length, -side_length,  -side_length },
+
+	{  side_length, -side_length,  -side_length,
+	   side_length,  side_length,  -side_length,	//뒤
+	  -side_length,  side_length,  -side_length,
+	  -side_length, -side_length,  -side_length },
+
+	{ -side_length,  side_length,  side_length,
+	  -side_length,  side_length,  -side_length,	//위
+	   side_length,  side_length,  -side_length,
+	   side_length,  side_length,  side_length},
+
+	{ -side_length, -side_length,  -side_length,
+	  -side_length, -side_length, side_length,	//아래
+	   side_length, -side_length, side_length,
+	   side_length, -side_length,  -side_length },
+};
+const float cube_normal[] = {
+	0,0,1,0,0,1,0,0,1,0,0,1,
+	1,0,0,1,0,0,1,0,0,1,0,0,
+	-1,0,0,-1,0,0,-1,0,0,-1,0,0,
+	0,0,-1,0,0,-1,0,0,-1,0,0,-1,
+	0,1,0,0,1,0,0,1,0,0,1,0,
+	0,-1,0,0,-1,0,0,-1,0,0,-1,0,
 };
 
-unsigned int cube_index[] = {
-	0,1,2,
-	2,6,7,
-	7,6,5,
-	5,4,7,
-	7,3,2,
-	2,1,5,
-	5,6,2,
-	2,3,0,
-	0,3,7,
-	7,4,0,
-	0,4,5,
-	5,1,0
-};
-const int cube_normal[] = {
-	0,0,1,0,0,1,0,0,1,
-	1,0,0,1,0,0,1,0,0,
-	0,0,-1,0,0,-1,0,0,-1,
-	0,0,-1,0,0,-1,0,0,-1,
-	1,0,0,1,0,0,1,0,0,
-	0,-1,0,0,-1,0,0,-1,0,
-	0,-1,0,0,-1,0,0,-1,0,
-	0,0,1,0,0,1,0,0,1,
-	0,1,0,0,1,0,0,1,0,
-	0,1,0,0,1,0,0,1,0,
-	-1,0,0,-1,0,0,-1,0,0,
-	-1,0,0,-1,0,0,-1,0,0,
-};
 GLuint cube_normal_vbo;
+GLfloat cube_RGB[6][12];
 
-GLfloat cube_RGB[6][6][3];
 GLfloat tetra[5][3] = {
 	{ -side_length, 0, side_length},
 	{ -side_length, 0, -side_length},
@@ -89,6 +90,16 @@ unsigned int tetra_index[] = {
 	4,2,3,
 	4,3,0
 };
+const float tetra_normal[] = {
+	0,-1,0,0,-1,0,0,-1,0,
+	0,-1,0,0,-1,0,0,-1,0,
+	0,0,-1,0,0,-1,0,0,-1,
+	-1,0,0,-1,0,0,-1,0,0,
+	1,0,0,1,0,0,1,0,0,
+	0,0,1,0,0,1,0,0,1,
+
+};
+GLuint tetra_normal_vbo;
 
 GLfloat tetra_RGB[5][3];
 
@@ -98,8 +109,6 @@ GLfloat line_RGB[2][6];
 
 bool cube_draw;
 bool tetra_draw;
-bool depth_test;
-bool triangle;
 bool timer_x;
 bool timer_y;
 float x_1;
@@ -123,19 +132,22 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	glewExperimental = GL_TRUE;
 	glewInit();
 	make_shaderProgram();
-	x_1 = 30.0f;
-	y_1 = 30.0f;
-	for (int i = 0; i < 6; ++i) {
-		for (int k = 0; k < 3; ++k)
-		{
-			cube_RGB[i][0][k] = color(gen);
-			cube_RGB[i][1][k] = color(gen);
-			cube_RGB[i][2][k] = color(gen);
-			cube_RGB[i][3][k] = color(gen);
-			cube_RGB[i][4][k] = color(gen);
-			cube_RGB[i][5][k] = color(gen);
+	x_1 = 0.0f;
+	y_1 = 0.0f;
+	for (int i = 0; i < 6; ++i)
+	{
+		cube_RGB[i][0] = color(gen);
+		cube_RGB[i][1] = color(gen);
+		cube_RGB[i][2] = color(gen);
+
+
+		for (int k = 1; k < 4; ++k) {
+			cube_RGB[i][k * 3] = cube_RGB[i][0];
+			cube_RGB[i][k * 3 + 1] = cube_RGB[i][1];
+			cube_RGB[i][k * 3 + 2] = cube_RGB[i][2];
 		}
 	}
+
 	for (int i = 0; i < 5; ++i)
 		for (int j = 0; j < 3; ++j)
 			tetra_RGB[i][j] = color(gen);
@@ -155,7 +167,7 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 {
 	GLfloat rColor, gColor, bColor;
-	rColor = gColor = bColor = 0.8f;
+	rColor = gColor = bColor = 0.0f;
 	glClearColor(rColor, gColor, bColor, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -180,38 +192,29 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glUniformMatrix4fv(proj_location, 1, GL_FALSE, &proj[0][0]);
 
 	//뷰 행렬
-	glm::vec3 cameraPos = glm::vec3(0.f, 0.f, -3.f); //--- 카메라 위치
+	glm::vec3 cameraPos = glm::vec3(0.f, 1.f, 3.f); //--- 카메라 위치
 	glm::vec3 cameraDirection = glm::vec3(0.f, 0.f, 0.f); //--- 카메라 바라보는 방향
 	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f); //--- 카메라 위쪽 방향
 	glm::mat4 view = glm::mat4(1.0f);
 	view = glm::lookAt(cameraPos, cameraDirection, cameraUp);
-	view = glm::rotate(view, glm::radians(0.f), glm::vec3(0.f, 1.f, 0.f));
+	view = glm::rotate(view, glm::radians(30.f), glm::vec3(0.f, 1.f, 0.f));
 	glUniformMatrix4fv(view_location, 1, GL_FALSE, &view[0][0]);
 
 
 
 	unsigned int lightPosLocation = glGetUniformLocation(shaderProgramID, "lightPos");
-	glUniform3f(lightPosLocation, 0.3, 0.3, 0.3);
+	glUniform3f(lightPosLocation, 0.f, 0.f, 0.4f);
 	unsigned int lightColorLocation = glGetUniformLocation(shaderProgramID, "lightColor");
 	glUniform3f(lightColorLocation, 1.0, 1.0, 1.0);
+	unsigned int objectColorLocation = glGetUniformLocation(shaderProgramID, "objColor");
+	glUniform3f(objectColorLocation, 0.5, 1.0, 0.0);
 	unsigned int viewPosLocation = glGetUniformLocation(shaderProgramID, "viewPos");
 	glUniform3f(viewPosLocation, cameraPos.x, cameraPos.y, cameraPos.z);
 
-
-
-
-
-	glm::mat4 lines = glm::mat4(1.0f);
-	lines = glm::translate(lines, glm::vec3(0.0f, 0.0f, 0.0f));
-	unsigned int lines_location = glGetUniformLocation(shaderProgramID, "transform");
-	glUniformMatrix4fv(lines_location, 1, GL_FALSE, glm::value_ptr(lines));
-	
 	glFrontFace(GL_CW);
 	glm::mat4 trans = glm::mat4(1.0f);
-	if(depth_test)
-		glEnable(GL_DEPTH_TEST);
-	else
-		glDisable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
 	if (tetra_draw) {
 		trans = glm::translate(trans, glm::vec3(movex, movey, 0.0f));
 		trans = glm::rotate(trans, glm::radians(x_1), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -224,10 +227,9 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 		glBindBuffer(GL_ARRAY_BUFFER, tetravbo[1]);
 		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-		if(triangle)
-			glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
-		else
-			glDrawElements(GL_LINE_STRIP, 18, GL_UNSIGNED_INT, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, tetra_normal_vbo);
+		glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
 	}
 	else {
 		trans = glm::translate(trans, glm::vec3(movex, movey, 0.0f));
@@ -241,14 +243,28 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 		glBindBuffer(GL_ARRAY_BUFFER, cube_normal_vbo);
 		glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), 0);
-
-
-		if (triangle)
-			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-		else
-			glDrawElements(GL_LINE_STRIP, 36, GL_UNSIGNED_INT, 0);
+		for (int i = 0; i < 6; ++i) {
+			glDrawArrays(GL_TRIANGLE_FAN, i * 4, 4);
+		}
 	}
 
+
+	glUniform3f(objectColorLocation, 0.5, 0.5, 0.5);
+	glm::mat4 camera_box = glm::mat4(1.0f);
+	camera_box = glm::translate(camera_box, glm::vec3(0.2f, 0.f, 0.5f));
+	camera_box = glm::scale(camera_box, glm::vec3(0.3, 0.3, 0.3));
+	unsigned int cameras_location = glGetUniformLocation(shaderProgramID, "transform");
+	glUniformMatrix4fv(cameras_location, 1, GL_FALSE, glm::value_ptr(camera_box));
+	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
+	glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
+	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)(2 * 12 * sizeof(GLfloat)));
+	glBindBuffer(GL_ARRAY_BUFFER, cube_normal_vbo);
+	glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+
+	for (int i = 0; i < 6; ++i) {
+		glDrawArrays(GL_TRIANGLE_FAN, i * 4, 4);
+	}
 
 	glDisableVertexAttribArray(ColorLocation);
 	glDisableVertexAttribArray(PosLocation);
@@ -339,16 +355,13 @@ void InitBuffer() {
 	glGenBuffers(2, cubevbo);
 	glGenBuffers(2, tetravbo);
 	glGenBuffers(2, vbo_line);
-	glGenBuffers(1, &cube_ebo);
 	glGenBuffers(1, &tetra_ebo);
 	glGenBuffers(1, &cube_normal_vbo);
+	glGenBuffers(1, &tetra_normal_vbo);
 
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cube_index), cube_index, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_DYNAMIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cube_RGB), cube_RGB, GL_STATIC_DRAW);
@@ -371,6 +384,8 @@ void InitBuffer() {
 
 	glBindBuffer(GL_ARRAY_BUFFER, cube_normal_vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(cube_normal), cube_normal, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, tetra_normal_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(tetra_normal), tetra_normal, GL_STATIC_DRAW);
 
 }
 GLvoid Keyboard(unsigned char key, int x, int y)
@@ -378,26 +393,15 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 
 
 	switch (key) {
-	case 'c':
-		cube_draw = true;
-		tetra_draw = false;
-		break;
-	case 'p':
-		cube_draw = false;
-		tetra_draw = true;
-		break;
-	case 'h':
-		if (depth_test)
-			depth_test = false;
-		else
-			depth_test = true;
-		break;
-	case 'w':
-	case 'W':
-		if (triangle)
-			triangle = false;
-		else
-			triangle = true;
+	case 'n':
+		if (cube_draw) {
+			cube_draw = false;
+			tetra_draw = true;
+		}
+		else {
+			cube_draw = true;
+			tetra_draw = false;
+		}
 		break;
 	case 'x':
 		if (!timer_x)
@@ -443,8 +447,6 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	case 's':
 		cube_draw = false;
 		tetra_draw = false;
-		depth_test = false;
-		triangle = false;
 		timer_x = false;
 		timer_y = false;
 		movex = 0;
@@ -458,9 +460,6 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[0]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube_ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cube_index), cube_index, GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ARRAY_BUFFER, cubevbo[1]);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(cube_RGB), cube_RGB, GL_STATIC_DRAW);
