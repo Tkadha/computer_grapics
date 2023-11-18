@@ -13,7 +13,7 @@
 
 #define Width 1200
 #define Height 800
-#define side_length 0.3
+#define PI 3.14159265
 
 void make_vertexShaders();
 void make_fragmentShaders();
@@ -26,6 +26,7 @@ GLvoid Keyboard(unsigned char key, int x, int y);
 void SpecialKeyboard(int, int, int);
 void rotate_x(int);
 void rotate_y(int);
+void rotate_light(int);
 
 std::random_device rd;
 std::mt19937 gen(rd());
@@ -108,7 +109,19 @@ public:
 		glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(glm::vec3), normaldata, GL_STATIC_DRAW);
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(2);
+
+		delete[] vertex;
+		vertex = nullptr;
+		delete[] face;
+		face = nullptr;
+		delete[] vertexdata;
+		vertexdata = nullptr;
+		delete[] normaldata;
+		normaldata = nullptr;
+		delete[] colordata;
+		colordata = nullptr;
 	}
+
 };
 
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
@@ -120,6 +133,8 @@ GLuint vao;
 Shape cube;
 Shape tetra;
 
+float rail[200][3];
+
 
 bool cube_draw;
 bool tetra_draw;
@@ -127,6 +142,7 @@ bool timer_x;
 bool timer_y;
 float x_1;
 float y_1;
+float light_rotate_y;
 float addx_1;
 float addy_1;
 float movex;
@@ -134,9 +150,11 @@ float movey;
 bool light_on;
 
 glm::vec3 light_pos;
+glm::vec3 light_box_pos;
 glm::vec3 light_color;
 
-
+GLUquadricObj* way;
+bool rotate_light_on;
 
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
@@ -151,14 +169,27 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 	make_shaderProgram();
 	x_1 = 0.0f;
 	y_1 = 0.0f;
-	light_pos.x = 0.f;
-	light_pos.y = 0.f;
-	light_pos.z = 1.f;
+	light_box_pos.x = light_pos.x = 0.f;
+	light_box_pos.y = light_pos.y = 0.f;
+	light_box_pos.z = light_pos.z = 1.f;
 	light_color.x = 1.0f;
 	light_color.y = 1.0f;
 	light_color.z = 1.0f;
 	cube_draw = true;
 	tetra_draw = false;
+
+	float x;
+	float z;
+	float angle;
+	for (int i = 0; i < 200; ++i) {
+		angle = (i + 50) * 1.8f;
+		x = cos(angle * PI / 180) * light_pos.z;
+		z = sin(angle * PI / 180) * light_pos.z;
+		rail[i][0] = x;
+		rail[i][1] = 0.0f;
+		rail[i][2] = z;
+
+	}
 	InitBuffer();
 	//--- 세이더 읽어와서 세이더 프로그램 만들기
 	glutDisplayFunc(drawScene); //--- 출력 콜백 함수
@@ -217,10 +248,17 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glm::mat4 trans = glm::mat4(1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
+	unsigned int trans_location = glGetUniformLocation(shaderProgramID, "transform");
+	for (int i = 0; i < 200; ++i) {
+		glm::mat4 rail1 = trans;
+		rail1 = glm::translate(rail1, glm::vec3(rail[i][0], rail[i][1], rail[i][2]));
+		glUniformMatrix4fv(trans_location, 1, GL_FALSE, glm::value_ptr(rail1));
+		gluSphere(way, 0.005, 5, 5);
+	}
 	if (tetra_draw) {
-		trans = glm::translate(trans, glm::vec3(movex, movey, 0.0f));
 		trans = glm::rotate(trans, glm::radians(x_1), glm::vec3(1.0f, 0.0f, 0.0f));
 		trans = glm::rotate(trans, glm::radians(y_1), glm::vec3(0.0f, 1.0f, 0.0f));	
+		trans = glm::translate(trans, glm::vec3(0.0f, -0.5f, 0.0f));
 		trans = glm::scale(trans, glm::vec3(0.7, 0.7, 0.7));
 		unsigned int trans_location = glGetUniformLocation(shaderProgramID, "transform");
 		glUniformMatrix4fv(trans_location, 1, GL_FALSE, glm::value_ptr(trans));
@@ -250,12 +288,13 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	}
 
 
-	glm::mat4 camera_box = glm::mat4(1.0f);
-	camera_box = glm::translate(camera_box, glm::vec3(light_pos.x, light_pos.y, light_pos.z));
-	camera_box = glm::scale(camera_box, glm::vec3(0.3, 0.3, 0.3));
-	camera_box = glm::translate(camera_box, glm::vec3(-0.5f, -0.5f, -0.5f));
+	glm::mat4 light_box = glm::mat4(1.0f);
+	light_box = glm::rotate(light_box, glm::radians(light_rotate_y), glm::vec3(0.0f, 1.0f, 0.0f));
+	light_box = glm::translate(light_box, glm::vec3(light_box_pos.x, light_box_pos.y, light_box_pos.z));
+	light_box = glm::scale(light_box, glm::vec3(0.3, 0.3, 0.3));
+	light_box = glm::translate(light_box, glm::vec3(-0.5f, -0.5f, -0.5f));
 	unsigned int cameras_location = glGetUniformLocation(shaderProgramID, "transform");
-	glUniformMatrix4fv(cameras_location, 1, GL_FALSE, glm::value_ptr(camera_box));
+	glUniformMatrix4fv(cameras_location, 1, GL_FALSE, glm::value_ptr(light_box));
 	glBindBuffer(GL_ARRAY_BUFFER, cube.vbo[0]);
 	glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 	glBindBuffer(GL_ARRAY_BUFFER, cube.vbo[1]);
@@ -355,10 +394,17 @@ void InitBuffer() {
 	cube.load_Obj("./cube.obj");
 	tetra.load_Obj("./tetra.obj");
 
+	way = gluNewQuadric();
+	gluQuadricNormals(way, GLU_SMOOTH);
+	gluQuadricOrientation(way, GLU_OUTSIDE);
+	gluQuadricTexture(way, GL_FALSE);
+
 }
 GLvoid Keyboard(unsigned char key, int x, int y)
 {
-
+	float light_x;
+	float light_z;
+	float angle;
 
 	switch (key) {
 	case 'n':
@@ -407,25 +453,39 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			timer_y = false;
 		}
 		break;
-	case 's':
-		cube_draw = true;
-		tetra_draw = false;
-		timer_x = false;
-		timer_y = false;
-		movex = 0;
-		movey = 0;
-		x_1 = 0.0f;
-		y_1 = 0.0f;
-		light_pos.x = 0.f;
-		light_pos.y = 0.f;
-		light_pos.z = 1.f;
-
+	case 'r':
+		if (!rotate_light_on)
+		{
+			rotate_light_on = true;
+			glutTimerFunc(50, rotate_light, 0);
+		}
+		else
+			rotate_light_on = false;
 		break;
 	case 'z':
 		light_pos.z -= 0.3f;
+		light_box_pos.z -= 0.3f;
+		for (int i = 0; i < 200; ++i) {
+			angle = (i + 50) * 1.8f;
+			light_x = cos(angle * PI / 180) * light_box_pos.z;
+			light_z = sin(angle * PI / 180) * light_box_pos.z;
+			rail[i][0] = light_x;
+			rail[i][1] = 0.0f;
+			rail[i][2] = light_z;
+
+		}
 		break;
 	case 'Z':
 		light_pos.z += 0.3f;
+		light_box_pos.z += 0.3f;
+		for (int i = 0; i < 200; ++i) {
+			angle = (i + 50) * 1.8f;
+			light_x = cos(angle * PI / 180) * light_box_pos.z;
+			light_z = sin(angle * PI / 180) * light_box_pos.z;
+			rail[i][0] = light_x;
+			rail[i][1] = 0.0f;
+			rail[i][2] = light_z;
+		}
 		break;
 	case 'q':
 	case 'Q':
@@ -463,4 +523,23 @@ void SpecialKeyboard(int key, int x, int y) {
 		break;
 	}
 	glutPostRedisplay();
+}
+
+int light_count;
+void rotate_light(int value)
+{
+	light_pos.x = rail[light_count][0];
+	light_pos.y = rail[light_count][1];
+	light_pos.z = rail[light_count][2];
+	light_count++;
+	light_rotate_y -= 1.8f;
+	if (light_count >= 200)
+	{
+		light_count = 0;
+		light_rotate_y = 0;
+	}
+	if (rotate_light_on)
+		glutTimerFunc(1, rotate_light, value);
+	glutPostRedisplay();
+
 }
