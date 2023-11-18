@@ -3,18 +3,17 @@
 in vec3 out_Color; 
 in vec3 FragPos;
 in vec3 Normal;
-out vec4 FragColor;
 
+out vec4 FragColor;
 
 uniform vec3 lightPos;
 uniform vec3 lightColor;
 uniform vec3 viewPos;
 
 
-
 void main(void)
 {
-	float ambientLight = 0.3;
+	float ambientLight = 0.5;
 	vec3 ambient = ambientLight * lightColor;
 
 	vec3 normalVector = normalize(Normal);
