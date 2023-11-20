@@ -521,9 +521,9 @@ void rotate_z(int value) {
 }
 void rotate_light(int value)
 {
-	light_pos.x = rail[light_count][0];
-	light_pos.y = rail[light_count][1];
-	light_pos.z = rail[light_count][2];
+	light_pos.x = light_rail[light_count][0];
+	light_pos.y = light_rail[light_count][1];
+	light_pos.z = light_rail[light_count][2];
 	light_count++;
 	light_rotate_y -= 1.8f;
 	if (light_count >= 200)
