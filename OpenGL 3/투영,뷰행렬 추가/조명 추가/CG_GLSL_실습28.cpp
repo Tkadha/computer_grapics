@@ -16,7 +16,7 @@
 #define side_length 0.2
 #define board_size 3
 #define PI 3.14159265
-#define snow_count 80
+#define snow_count 100
 void make_vertexShaders();
 void make_fragmentShaders();
 void make_shaderProgram();
@@ -27,6 +27,7 @@ void InitBuffer();
 GLvoid Keyboard(unsigned char key, int x, int y);
 void rotate_light(int);
 void snowlain(int value);
+void planet_move(int value);
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID;
@@ -38,7 +39,7 @@ std::mt19937 gen(rd());
 std::uniform_real_distribution<> under(0.0, 0.7);
 std::uniform_real_distribution<> random_color(0.1, 1);
 std::uniform_real_distribution<> random_pos(-3, 3);
-std::uniform_real_distribution<> random_speed(0.005, 0.02);
+std::uniform_real_distribution<> random_speed(0.01, 0.04);
 
 class Shape {
 public:
@@ -127,12 +128,12 @@ public:
 		delete[] colordata;
 		colordata = nullptr;
 	}
-	void Set_color(float color) {
+	void Set_color(float r, float g, float b) {
 		glm::vec3* colordata = new glm::vec3[vertex_count];
 		for (int i = 0; i < vertex_count; ++i) {
-			colordata[i].x = color;
-			colordata[i].y = color;
-			colordata[i].z = color;
+			colordata[i].x = r;
+			colordata[i].y = g;
+			colordata[i].z = b;
 		}
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 		glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(glm::vec3), colordata, GL_STATIC_DRAW);
@@ -142,7 +143,6 @@ public:
 		colordata = nullptr;
 	}
 };
-
 
 class Snow : public Shape {
 public:
@@ -163,6 +163,17 @@ public:
 		}
 	}
 };
+
+class Planet : public Shape {
+public:
+	glm::vec3 pos;
+	float randian;
+
+};
+class Tetra : public Shape {
+public:
+
+};
 GLuint vbo_line[2];
 GLfloat line[3][6];
 GLfloat line_RGB[3][6];
@@ -174,13 +185,20 @@ Snow snow[snow_count];
 glm::vec3 light_pos;
 glm::vec3 default_light_pos;
 glm::vec3 light_color;
-int light_count;
 
+int light_count;
 float light_rail[200][3];
 float light_rotate_y;
 bool rotate_light_on;
 float amb_light;
 int light_rotate_LR;
+
+int planet_count[3];
+float rail[200][3];
+
+Planet planet[3];
+Tetra tetra;
+
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
 	//--- 윈도우 생성하기
@@ -233,7 +251,19 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 		}
 		amb_light = 0.5;
 	}
-
+	{
+		float x = 0;
+		float z = 0;
+		float angle = 0;
+		for (int i = 0; i < 200; ++i) {
+			angle = i * 1.8f;
+			x = cos(angle * PI / 180) * 2.f;
+			z = sin(angle * PI / 180) * 2.f;
+			rail[i][0] = x;
+			rail[i][1] = 1.f;
+			rail[i][2] = z;
+		}
+	}
 	InitBuffer();
 	//--- 세이더 읽어와서 세이더 프로그램 만들기
 	glutDisplayFunc(drawScene); //--- 출력 콜백 함수
@@ -253,6 +283,7 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glBindVertexArray(vao);
 
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
 	int PosLocation = glGetAttribLocation(shaderProgramID, "in_Position"); //	: 0
 	int ColorLocation = glGetAttribLocation(shaderProgramID, "in_Color"); //	: 1
 	int NormalLocation = glGetAttribLocation(shaderProgramID, "in_Normal"); //	: 2
@@ -330,6 +361,23 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glUniformMatrix4fv(cameras_location, 1, GL_FALSE, glm::value_ptr(light_box));
 	glDrawArrays(GL_TRIANGLES, 0, light_cube.vertex_count);
 
+	glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[0]);
+	glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+	glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[1]);
+	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+	glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[2]);
+	glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+
+	glm::mat4 tetra_model = trans;
+	tetra_model = glm::scale(tetra_model, glm::vec3(1.f, 1.f, 1.f));
+	unsigned int tetra_location = glGetUniformLocation(shaderProgramID, "transform");
+	glUniformMatrix4fv(tetra_location, 1, GL_FALSE, glm::value_ptr(tetra_model));
+	glDrawArrays(GL_TRIANGLES, 0, tetra.vertex_count);
+
+
+
+
+
 	for (int i = 0; i < snow_count; ++i) {
 
 		glBindBuffer(GL_ARRAY_BUFFER, snow[i].vbo[0]);
@@ -340,12 +388,27 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 		glm::mat4 snow_model = trans;
 		snow_model = glm::translate(snow_model, glm::vec3(snow[i].pos));
-		snow_model = glm::scale(snow_model, glm::vec3(0.1, 0.1, 0.1));
+		snow_model = glm::scale(snow_model, glm::vec3(0.05, 0.05, 0.05));
 		unsigned int snow_location = glGetUniformLocation(shaderProgramID, "transform");
 		glUniformMatrix4fv(snow_location, 1, GL_FALSE, glm::value_ptr(snow_model));
 		glDrawArrays(GL_TRIANGLES, 0, snow[i].vertex_count);
 	}
-
+	for (int i = 0; i < 3; ++i) {
+		glBindBuffer(GL_ARRAY_BUFFER, planet[i].vbo[0]);
+		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, planet[i].vbo[1]);
+		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, planet[i].vbo[2]);
+		glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glm::mat4 planet_model = trans;
+		planet_model = glm::translate(planet_model, glm::vec3(0.f,1.f,0.f));
+		planet_model = glm::rotate(planet_model,glm::radians(planet[i].randian), glm::vec3(1.f, 0.f, 0.f));
+		planet_model = glm::translate(planet_model, glm::vec3(planet[i].pos));
+		planet_model = glm::scale(planet_model, glm::vec3(0.3, 0.3, 0.3));
+		unsigned int planet_location = glGetUniformLocation(shaderProgramID, "transform");
+		glUniformMatrix4fv(planet_location, 1, GL_FALSE, glm::value_ptr(planet_model));
+		glDrawArrays(GL_TRIANGLES, 0, planet[i].vertex_count);
+	}
 	glDisableVertexAttribArray(ColorLocation);
 	glDisableVertexAttribArray(PosLocation);
 	glDisableVertexAttribArray(NormalLocation);
@@ -437,15 +500,32 @@ void InitBuffer() {
 	glBindVertexArray(vao);
 
 	floor_cube.load_Obj("center_cube.obj");
-	floor_cube.Set_color(0.5f);
+	floor_cube.Set_color(0.5f, 0.5f, 0.5f);
 	light_cube.load_Obj("center_cube.obj");
-	light_cube.Set_color(1.0f);
+	light_cube.Set_color(1.0f, 1.0f, 1.0f);
 
 	for (int i = 0; i < snow_count; ++i) {
 		snow[i].load_Obj("sphere.obj");
-		snow[i].Set_color(1.0f);
+		snow[i].Set_color(1.0f, 1.0f, 1.0f);
 		snow[i].Setting();
 	}
+
+	for (int i = 0; i < 3; ++i) {
+		planet[i].load_Obj("sphere.obj");
+		planet[i].randian = -45 + (45 * i);
+		planet_count[i] = 15 * i;
+	}
+	planet[0].Set_color(1.f,0.f,0.f);
+	planet[1].Set_color(0.f,1.f,0.f);
+	planet[2].Set_color(0.f,0.f,1.f);
+	for (int i = 0; i < 3; ++i) {
+		glutTimerFunc(5*(i+1), planet_move, i);
+	}
+
+	tetra.load_Obj("tetra.obj");
+	tetra.Set_color(0.f, 1.f, 1.f);
+
+
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_line[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(line), line, GL_STATIC_DRAW);
 
@@ -559,5 +639,21 @@ void snowlain(int value) {
 	snow[value].drop_snow();
 	glutTimerFunc(10, snowlain, value);
 	glutPostRedisplay();
+}
+void planet_move(int value) {
 
+	planet[value].pos.x = rail[planet_count[value]][0];
+	planet[value].pos.y = rail[planet_count[value]][1];
+	planet[value].pos.z = rail[planet_count[value]][2];
+	planet_count[value]++;
+	
+	if (planet_count[value] >= 200)
+	{
+		planet_count[value] = 0;
+	}
+	else if (planet_count[value] <= 0) {
+		planet_count[value] = 200;
+	}
+	glutTimerFunc(5 * (value + 1), planet_move, value);
+	glutPostRedisplay();
 }
