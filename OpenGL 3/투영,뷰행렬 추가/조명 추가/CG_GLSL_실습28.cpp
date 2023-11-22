@@ -28,6 +28,7 @@ GLvoid Keyboard(unsigned char key, int x, int y);
 void rotate_light(int);
 void snowlain(int value);
 void planet_move(int value);
+void draw_tetra(glm::mat4 tetra_model);
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
 GLuint vertexShader, fragmentShader; //--- 세이더 객체
 GLuint shaderProgramID;
@@ -199,6 +200,8 @@ float rail[200][3];
 Planet planet[3];
 Tetra tetra;
 
+int tetra_mode;
+
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
 	//--- 윈도우 생성하기
@@ -263,6 +266,11 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 			rail[i][1] = 1.f;
 			rail[i][2] = z;
 		}
+	}
+
+	{
+		tetra_mode = 0;
+
 	}
 	InitBuffer();
 	//--- 세이더 읽어와서 세이더 프로그램 만들기
@@ -335,46 +343,66 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		glLineWidth(1);
 		glDrawArrays(GL_LINES, 0, 2);
 	}
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, floor_cube.vbo[0]);
+		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, floor_cube.vbo[1]);
+		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, floor_cube.vbo[2]);
+		glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glm::mat4 ground_cube = base;
+		ground_cube = glm::translate(ground_cube, glm::vec3(0.f, -0.2f * 15, 0.f));
+		ground_cube = glm::scale(ground_cube, glm::vec3(15.f, 15.f, 15.f));
+		glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(ground_cube));
+		//glDrawArrays(GL_TRIANGLES, 0, floor_cube.vertex_count);
+	}
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, light_cube.vbo[0]);
+		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, light_cube.vbo[1]);
+		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, light_cube.vbo[2]);
+		glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glm::mat4 light_box = trans;
+		light_box = glm::translate(light_box, glm::vec3(light_pos));
+		light_box = glm::scale(light_box, glm::vec3(0.5, 0.5, 0.5));
+		unsigned int cameras_location = glGetUniformLocation(shaderProgramID, "transform");
+		glUniformMatrix4fv(cameras_location, 1, GL_FALSE, glm::value_ptr(light_box));
+		glDrawArrays(GL_TRIANGLES, 0, light_cube.vertex_count);
+	}
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[0]);
+		glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[1]);
+		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[2]);
+		glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		if (tetra_mode == 0) {
+			glm::mat4 tetra_model = trans;
+			unsigned int tetra_location = glGetUniformLocation(shaderProgramID, "transform");
+			glUniformMatrix4fv(tetra_location, 1, GL_FALSE, glm::value_ptr(tetra_model));
+			glDrawArrays(GL_TRIANGLES, 0, tetra.vertex_count);
+		}
+		else if (tetra_mode == 1) {
+			glm::mat4 tetra_model = trans;
+			draw_tetra(tetra_model);
+		}
+		else if (tetra_mode == 2) {
+			glm::mat4 tetra_model = trans;
+			for (int i = 0; i < 2; ++i) {
+				for (int j = 0; j < 2; ++j) {
+					tetra_model = trans;
+					tetra_model = glm::translate(tetra_model, glm::vec3(-0.5f + (1.f * i), 0.f, -0.5f + (1.f * j)));
+					for (int l = 0; l < tetra_mode - 1; ++l) {
+						tetra_model = glm::scale(tetra_model, glm::vec3(0.5f, 0.5f, 0.5f));
+					}
+					draw_tetra(tetra_model);
+				}
+			}
 
-	glBindBuffer(GL_ARRAY_BUFFER, floor_cube.vbo[0]);
-	glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, floor_cube.vbo[1]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, floor_cube.vbo[2]);
-	glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glm::mat4 ground_cube = base;
-	ground_cube = glm::translate(ground_cube, glm::vec3(0.f, -0.2f * 15, 0.f));
-	ground_cube = glm::scale(ground_cube, glm::vec3(15.f, 15.f, 15.f));
-	glUniformMatrix4fv(shape_location, 1, GL_FALSE, glm::value_ptr(ground_cube));
-	glDrawArrays(GL_TRIANGLES, 0, floor_cube.vertex_count);
-
-	glBindBuffer(GL_ARRAY_BUFFER, light_cube.vbo[0]);
-	glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, light_cube.vbo[1]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, light_cube.vbo[2]);
-	glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glm::mat4 light_box = trans;
-	light_box = glm::translate(light_box, glm::vec3(light_pos));
-	light_box = glm::scale(light_box, glm::vec3(0.5, 0.5, 0.5));
-	unsigned int cameras_location = glGetUniformLocation(shaderProgramID, "transform");
-	glUniformMatrix4fv(cameras_location, 1, GL_FALSE, glm::value_ptr(light_box));
-	glDrawArrays(GL_TRIANGLES, 0, light_cube.vertex_count);
-
-	glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[0]);
-	glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[1]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[2]);
-	glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-
-	glm::mat4 tetra_model = trans;
-	tetra_model = glm::scale(tetra_model, glm::vec3(1.f, 1.f, 1.f));
-	unsigned int tetra_location = glGetUniformLocation(shaderProgramID, "transform");
-	glUniformMatrix4fv(tetra_location, 1, GL_FALSE, glm::value_ptr(tetra_model));
-	glDrawArrays(GL_TRIANGLES, 0, tetra.vertex_count);
-
-
+		}
+	}
+	
 
 
 
@@ -600,6 +628,21 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	case '-':
 		amb_light -= 0.1;
 		break;
+	case '1':
+		tetra_mode = 0;
+		break;
+	case '2':
+		tetra_mode = 1;
+		break;
+	case '3':
+		tetra_mode = 2;
+		break;
+	case '4':
+		tetra_mode = 3;
+		break;
+	case '5':
+		tetra_mode = 4;
+		break;
 	case 'q':
 	case 'Q':
 		exit(0);
@@ -656,4 +699,23 @@ void planet_move(int value) {
 	}
 	glutTimerFunc(5 * (value + 1), planet_move, value);
 	glutPostRedisplay();
+}
+
+void draw_tetra(glm::mat4 tetra_model) {
+	for (int i = 0; i < 2; ++i) {
+		for (int j = 0; j < 2; ++j) {
+			glm::mat4 small_tetra_model = tetra_model;
+			small_tetra_model = glm::translate(small_tetra_model, glm::vec3(-0.5f + (1.f * i), 0.f, -0.5f + (1.f * j)));
+			small_tetra_model = glm::scale(small_tetra_model, glm::vec3(0.5f, 0.5f, 0.5f));
+			unsigned int tetra_location = glGetUniformLocation(shaderProgramID, "transform");
+			glUniformMatrix4fv(tetra_location, 1, GL_FALSE, glm::value_ptr(small_tetra_model));
+			glDrawArrays(GL_TRIANGLES, 0, tetra.vertex_count);
+		}
+		glm::mat4 small_tetra_model = tetra_model;
+		small_tetra_model = glm::translate(small_tetra_model, glm::vec3(0.f, 1.f, 0.f));
+		small_tetra_model = glm::scale(small_tetra_model, glm::vec3(0.5f, 0.5f, 0.5f));
+		unsigned int tetra_location = glGetUniformLocation(shaderProgramID, "transform");
+		glUniformMatrix4fv(tetra_location, 1, GL_FALSE, glm::value_ptr(small_tetra_model));
+		glDrawArrays(GL_TRIANGLES, 0, tetra.vertex_count);
+	}
 }
