@@ -201,7 +201,7 @@ Planet planet[3];
 Tetra tetra;
 
 int tetra_mode;
-
+int light_pos_count;
 void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 {
 	//--- 윈도우 생성하기
@@ -270,7 +270,6 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 
 	{
 		tetra_mode = 0;
-
 	}
 	InitBuffer();
 	//--- 세이더 읽어와서 세이더 프로그램 만들기
@@ -622,6 +621,58 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 		break;
 	case '5':
 		tetra_mode = 4;
+		break;
+	case 'c':
+	case 'C':
+		light_color = { 0.f,0.f,0.f };
+		if (light_count == 0) {
+			light_color.x = 1.f;
+		}
+		else if (light_count == 1) {
+			light_color.y = 1.f;
+		}
+		else if (light_count == 2) {
+			light_color.z = 1.f;
+		}
+		else if (light_count == 3) {
+			light_color.x = 1.f;
+			light_color.y = 1.f;
+			light_color.z = 1.f;
+		}
+		++light_count;
+		if (light_count > 3)
+			light_count = 0;
+		break;
+	case 'm':
+		if(light_color.x ==1.f || light_color.y == 1.f || light_color.z ==1.f)
+			light_color = { 0.2f,0.2f,0.2f };
+		else {
+			light_color = { 1.f,1.f,1.f };
+		}
+		break;
+	case 'p':
+		if (light_pos_count == 0) {
+
+			light_pos.x = 1.f;
+			light_pos.z = 0.f;
+		}
+		else if (light_pos_count == 1) {
+			light_pos.x = -1.f;
+			light_pos.z = 0.f;
+		}
+		else if (light_pos_count == 2) {
+			light_pos.x = 0.f;
+			light_pos.z = 1.f;
+		}
+		else if (light_pos_count == 3) {
+			light_pos.x = 0.f;
+			light_pos.z = -1.f;
+		}
+		default_light_pos.x = light_pos.x;
+		default_light_pos.z = light_pos.z;
+		++light_pos_count;
+		if (light_pos_count > 3)
+			light_pos_count = 0;
 		break;
 	case 'q':
 	case 'Q':
