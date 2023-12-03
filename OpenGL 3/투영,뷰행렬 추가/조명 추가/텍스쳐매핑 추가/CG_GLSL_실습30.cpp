@@ -1,4 +1,5 @@
 #define  _CRT_SECURE_NO_WARNINGS
+#define STB_IMAGE_IMPLEMENTATION
 #include <iostream>
 #include <gl/glew.h>
 #include <gl/freeglut.h>
@@ -9,7 +10,7 @@
 #include <stdlib.h>
 #include <random>
 #include <fstream>
-
+#include "stb_image.h"
 
 #define Width 1200
 #define Height 800
@@ -34,13 +35,15 @@ std::uniform_real_distribution<> random_color(0, 1);
 
 class Shape {
 public:
-	GLuint vbo[3];
+	GLuint vbo[4];
 	int vertex_count;
+
 	void load_Obj(const char* path)
 	{
 		int v_count = 0;
 		int n_count = 0;
 		int f_count = 0;
+		int vt_count = 0;
 		std::string lineHeader;
 		std::ifstream in(path);
 		if (!in) {
@@ -50,17 +53,22 @@ public:
 		while (in >> lineHeader) {
 			if (lineHeader == "v")	++v_count;
 			else if (lineHeader == "f")	++f_count;
+			else if (lineHeader == "vt") ++vt_count;
 		}
 		in.close();
 		in.open(path);
 
 		glm::vec3* vertex = new glm::vec3[v_count];
 		glm::vec3* face = new glm::vec3[f_count];
+		glm::vec3* face_text = new glm::vec3[f_count];
+		glm::vec2* texture = new glm::vec2[vt_count];
 		glm::vec3* vertexdata = new glm::vec3[f_count * 3];
 		glm::vec3* normaldata = new glm::vec3[f_count * 3];
 		glm::vec3* colordata = new glm::vec3[f_count * 3];
+		glm::vec2* texdata = new glm::vec2[f_count * 3];
 		vertex_count = f_count * 3;
 		int v_incount = 0;
+		int vt_incount = 0;
 		int f_incount = 0;
 		int color_count = 0;
 		while (in >> lineHeader) {
@@ -68,11 +76,19 @@ public:
 				in >> vertex[v_incount].x >> vertex[v_incount].y >> vertex[v_incount].z;
 				++v_incount;
 			}
+			else if (lineHeader == "vt") {
+				in >> texture[vt_incount].x >> texture[vt_incount].y ;
+				++vt_incount;
+			}
 			else if (lineHeader == "f") {
-				in >> face[f_incount].x >> face[f_incount].y >> face[f_incount].z;
+				in >> face[f_incount].x >> face[f_incount].y >> face[f_incount].z >> face_text[f_incount].x >> face_text[f_incount].y >> face_text[f_incount].z;
 				vertexdata[f_incount * 3 + 0] = vertex[static_cast<int>(face[f_incount].x - 1)];
 				vertexdata[f_incount * 3 + 1] = vertex[static_cast<int>(face[f_incount].y - 1)];
 				vertexdata[f_incount * 3 + 2] = vertex[static_cast<int>(face[f_incount].z - 1)];
+
+				texdata[f_incount * 3 + 0] = texture[static_cast<int>(face_text[f_incount].x - 1)];
+				texdata[f_incount * 3 + 1] = texture[static_cast<int>(face_text[f_incount].y - 1)];
+				texdata[f_incount * 3 + 2] = texture[static_cast<int>(face_text[f_incount].z - 1)];
 				++f_incount;
 			}
 		}
@@ -91,7 +107,7 @@ public:
 			color_count++;
 		}
 
-		glGenBuffers(3, vbo);
+		glGenBuffers(4, vbo);
 
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 		glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(glm::vec3), vertexdata, GL_STATIC_DRAW);
@@ -108,18 +124,111 @@ public:
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(2);
 
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[3]);
+		glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(glm::vec2), texdata, GL_STATIC_DRAW);
+		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(3);
+
 		delete[] vertex;
 		vertex = nullptr;
 		delete[] face;
 		face = nullptr;
+		delete[] face_text;
+		face_text = nullptr;
 		delete[] vertexdata;
 		vertexdata = nullptr;
 		delete[] normaldata;
 		normaldata = nullptr;
 		delete[] colordata;
 		colordata = nullptr;
+		delete[] texdata;
+		texdata = nullptr;
+	}	
+
+};
+
+class Cube :public Shape {
+public:
+	unsigned int texturemap;
+	int width_image, height_image, number_of_channel;
+	unsigned char* data;
+	void create_texture() {
+		glGenTextures(1, &texturemap);
+		glBindTexture(GL_TEXTURE_2D, texturemap);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		data = stbi_load("cube.png", &width_image, &height_image, &number_of_channel, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_image, height_image, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+		else
+		{
+			std::cout << "Failed to load texture" << std::endl;
+		}
+		stbi_image_free(data);
 	}
 
+	void white_color() {
+		glm::vec3* colordata = new glm::vec3[vertex_count];
+
+		for (int i = 0; i < vertex_count; ++i) {
+			colordata[i].x = 1.f;
+			colordata[i].y = 1.f;
+			colordata[i].z = 1.f;
+		}
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(glm::vec3), colordata, GL_STATIC_DRAW);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(1);
+
+		delete[] colordata;
+		colordata = nullptr;
+	}
+};
+
+class Tetra : public Shape {
+public:
+	unsigned int texturemap;
+	int width_image, height_image, number_of_channel;
+	unsigned char* data;
+	void create_texture() {
+		glGenTextures(1, &texturemap);
+		glBindTexture(GL_TEXTURE_2D, texturemap);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		data = stbi_load("cube.png", &width_image, &height_image, &number_of_channel, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width_image, height_image, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+		else
+		{
+			std::cout << "Failed to load texture" << std::endl;
+		}
+		stbi_image_free(data);
+	}
+
+	void white_color() {
+		glm::vec3* colordata = new glm::vec3[vertex_count];
+
+		for (int i = 0; i < vertex_count; ++i) {
+			colordata[i].x = 1.f;
+			colordata[i].y = 1.f;
+			colordata[i].z = 1.f;
+		}
+		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+		glBufferData(GL_ARRAY_BUFFER, vertex_count * sizeof(glm::vec3), colordata, GL_STATIC_DRAW);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray(1);
+
+		delete[] colordata;
+		colordata = nullptr;
+	}
 };
 
 GLchar* vertexSource, * fragmentSource; //--- 소스코드 저장 변수
@@ -128,8 +237,8 @@ GLuint shaderProgramID;
 GLuint vao;
 
 
-Shape cube;
-Shape tetra;
+Cube cube;
+Tetra tetra;
 
 float rail[200][3];
 
@@ -210,9 +319,11 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	int PosLocation = glGetAttribLocation(shaderProgramID, "in_Position"); //	: 0
 	int ColorLocation = glGetAttribLocation(shaderProgramID, "in_Color"); //	: 1
 	int NormalLocation = glGetAttribLocation(shaderProgramID, "in_Normal"); //	: 2
+	int TextureLocation = glGetAttribLocation(shaderProgramID, "vTexCoord"); //	: 2
 	glEnableVertexAttribArray(PosLocation);
 	glEnableVertexAttribArray(ColorLocation);
 	glEnableVertexAttribArray(NormalLocation);
+	glEnableVertexAttribArray(TextureLocation);
 
 
 	unsigned int proj_location = glGetUniformLocation(shaderProgramID, "projection");
@@ -247,12 +358,6 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	unsigned int trans_location = glGetUniformLocation(shaderProgramID, "transform");
-	for (int i = 0; i < 200; ++i) {
-		glm::mat4 rail1 = trans;
-		rail1 = glm::translate(rail1, glm::vec3(rail[i][0], rail[i][1], rail[i][2]));
-		glUniformMatrix4fv(trans_location, 1, GL_FALSE, glm::value_ptr(rail1));
-		gluSphere(way, 0.005, 5, 5);
-	}
 	if (tetra_draw) {
 		trans = glm::rotate(trans, glm::radians(x_1), glm::vec3(1.0f, 0.0f, 0.0f));
 		trans = glm::rotate(trans, glm::radians(y_1), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -266,6 +371,9 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 		glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[2]);
 		glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, tetra.vbo[3]);
+		glVertexAttribPointer(TextureLocation, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+		glBindTexture(GL_TEXTURE_2D, tetra.texturemap);
 		glDrawArrays(GL_TRIANGLES, 0, tetra.vertex_count);
 
 	}
@@ -282,28 +390,17 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 		glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 		glBindBuffer(GL_ARRAY_BUFFER, cube.vbo[2]);
 		glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
+		glBindBuffer(GL_ARRAY_BUFFER, cube.vbo[3]);
+		glVertexAttribPointer(TextureLocation, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+		glBindTexture(GL_TEXTURE_2D, cube.texturemap);
 		glDrawArrays(GL_TRIANGLES, 0, cube.vertex_count);
 	}
 
 
-	glm::mat4 light_box = glm::mat4(1.0f);
-	light_box = glm::rotate(light_box, glm::radians(light_rotate_y), glm::vec3(0.0f, 1.0f, 0.0f));
-	light_box = glm::translate(light_box, glm::vec3(light_box_pos.x, light_box_pos.y, light_box_pos.z));
-	light_box = glm::scale(light_box, glm::vec3(0.3, 0.3, 0.3));
-	light_box = glm::translate(light_box, glm::vec3(-0.5f, -0.5f, -0.5f));
-	unsigned int cameras_location = glGetUniformLocation(shaderProgramID, "transform");
-	glUniformMatrix4fv(cameras_location, 1, GL_FALSE, glm::value_ptr(light_box));
-	glBindBuffer(GL_ARRAY_BUFFER, cube.vbo[0]);
-	glVertexAttribPointer(PosLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, cube.vbo[1]);
-	glVertexAttribPointer(ColorLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glBindBuffer(GL_ARRAY_BUFFER, cube.vbo[2]);
-	glVertexAttribPointer(NormalLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-
 	glDisableVertexAttribArray(ColorLocation);
 	glDisableVertexAttribArray(PosLocation);
 	glDisableVertexAttribArray(NormalLocation);
+	glDisableVertexAttribArray(TextureLocation);
 
 
 	glutSwapBuffers(); // 화면에 출력하기
@@ -389,8 +486,12 @@ void InitBuffer() {
 	glGenVertexArrays(1, &vao);
 
 	glBindVertexArray(vao);
-	cube.load_Obj("./cube.obj");
-	tetra.load_Obj("./tetra.obj");
+	cube.load_Obj("./cube_map.obj");
+	cube.create_texture();
+	cube.white_color();
+	tetra.load_Obj("./tetra_map.obj");
+	tetra.create_texture();
+	tetra.white_color();
 
 	way = gluNewQuadric();
 	gluQuadricNormals(way, GLU_SMOOTH);
@@ -429,6 +530,27 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			light_color.y = 1.f;
 			light_color.z = 1.f;
 			light_on = true;
+		}
+		break;
+	case 'x':
+		addx_1 = 1.f;
+		if (!timer_x) {
+			timer_x = true;
+			glutTimerFunc(50, rotate_x, 0);
+		}
+		else {
+			timer_x = false;
+		}
+		break;
+
+	case 'X':
+		addx_1 = -1.f;
+		if (!timer_x) {
+			timer_x = true;
+			glutTimerFunc(50, rotate_x, 0);
+		}
+		else {
+			timer_x = false;
 		}
 		break;
 	case 'y':
@@ -484,6 +606,22 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 			rail[i][1] = 0.0f;
 			rail[i][2] = light_z;
 		}
+		break;
+	case 's':
+	case 'S':
+		x_1 = 0.0f;
+		y_1 = 0.0f;
+		light_box_pos.x = light_pos.x = 0.f;
+		light_box_pos.y = light_pos.y = 0.f;
+		light_box_pos.z = light_pos.z = 1.f;
+		light_color.x = 1.0f;
+		light_color.y = 1.0f;
+		light_color.z = 1.0f;
+		cube_draw = true;
+		tetra_draw = false;
+		timer_x = false;
+		timer_y = false;
+		rotate_light_on = false;
 		break;
 	case 'q':
 	case 'Q':
