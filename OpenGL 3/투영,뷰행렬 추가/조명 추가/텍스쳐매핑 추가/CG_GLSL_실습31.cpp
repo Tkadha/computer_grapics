@@ -28,7 +28,7 @@ GLvoid Reshape(int w, int h);
 char* filetobuf(const char* file);
 void InitBuffer();
 GLvoid Keyboard(unsigned char key, int x, int y);
-void rotate_light(int);
+void rotate_y(int);
 void snowlain(int value);
 void planet_move(int value);
 void draw_tetra(glm::mat4 tetra_model, int count);
@@ -199,7 +199,6 @@ public:
 	}
 };
 
-
 class Snow : public Shape {
 public:
 	glm::vec3 pos;
@@ -262,8 +261,10 @@ int light_count;
 float light_rail[200][3];
 float light_rotate_y;
 bool rotate_light_on;
-float amb_light;
 int light_rotate_LR;
+
+bool rotate_camera;
+float rotate_camera_y;
 
 int planet_count[3];
 float rail[200][3];
@@ -323,7 +324,6 @@ void main(int argc, char** argv) //--- 윈도우 출력하고 콜백함수 설정
 			light_rail[i][1] = light_pos.y;
 			light_rail[i][2] = z;
 		}
-		amb_light = 0.5;
 	}
 	{
 		float x = 0;
@@ -386,8 +386,8 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glm::vec3 cameraDirection = glm::vec3(0.f, 0.f, 0.f); //--- 카메라 바라보는 방향
 	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f); //--- 카메라 위쪽 방향
 	glm::mat4 view = glm::mat4(1.0f);
-
 	view = glm::lookAt(cameraPos, cameraDirection, cameraUp);
+	view = glm::rotate(view, glm::radians(rotate_camera_y),glm::vec3(0.f, 1.f, 0.f));
 	glUniformMatrix4fv(view_location, 1, GL_FALSE, &view[0][0]);
 
 
@@ -397,8 +397,6 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	glUniform3f(lightColorLocation, light_color.x, light_color.y, light_color.z);
 	unsigned int viewPosLocation = glGetUniformLocation(shaderProgramID, "viewPos");
 	glUniform3f(viewPosLocation, cameraPos.x, cameraPos.y, cameraPos.z);
-	unsigned int AmbientPosLocation = glGetUniformLocation(shaderProgramID, "amb_light");
-	glUniform1f(AmbientPosLocation, amb_light);
 
 
 
@@ -634,25 +632,12 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	float light_angle = 0;
 	switch (key) {
 	case 'y':
-		if (!rotate_light_on)
-		{
-			light_rotate_LR = 0;
-			rotate_light_on = true;
-			glutTimerFunc(50, rotate_light, light_rotate_LR);
-		}
-		else {
-			rotate_light_on = false;
-		}
-		break;
 	case 'Y':
-		if (!rotate_light_on)
-		{
-			light_rotate_LR = 1;
-			rotate_light_on = true;
-			glutTimerFunc(50, rotate_light, light_rotate_LR);
-		}
+		if (rotate_camera)
+			rotate_camera = false;
 		else {
-			rotate_light_on = false;
+			rotate_camera = true;
+			glutTimerFunc(10, rotate_y, 0);
 		}
 		break;
 	case 's':
@@ -696,33 +681,13 @@ GLvoid Keyboard(unsigned char key, int x, int y)
 	}
 	glutPostRedisplay();
 }
-void rotate_light(int value)
-{
-	light_pos.x = light_rail[light_count][0];
-	light_pos.y = light_rail[light_count][1];
-	light_pos.z = light_rail[light_count][2];
-	if (value == 0)
-	{
-		light_count++;
-		light_rotate_y -= 1.8f;
-	}
-	else {
-		light_count--;
-		light_rotate_y += 1.8f;
-	}
-	if (light_count >= 200)
-	{
-		light_count = 0;
-		light_rotate_y = 0;
-	}
-	else if (light_count <= 0) {
-		light_count = 200;
-		light_rotate_y = 0;
-	}
-	if (rotate_light_on)
-		glutTimerFunc(1, rotate_light, value);
+void rotate_y(int value) {
+	rotate_camera_y += 1.0f;
+	if (rotate_camera)
+		glutTimerFunc(10, rotate_y, value);
 	glutPostRedisplay();
 }
+
 
 void snowlain(int value) {
 	snow[value].drop_snow();
