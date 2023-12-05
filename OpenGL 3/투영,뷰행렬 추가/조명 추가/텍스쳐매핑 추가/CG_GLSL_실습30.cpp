@@ -319,7 +319,7 @@ GLvoid drawScene() //--- 콜백 함수: 그리기 콜백 함수
 	int PosLocation = glGetAttribLocation(shaderProgramID, "in_Position"); //	: 0
 	int ColorLocation = glGetAttribLocation(shaderProgramID, "in_Color"); //	: 1
 	int NormalLocation = glGetAttribLocation(shaderProgramID, "in_Normal"); //	: 2
-	int TextureLocation = glGetAttribLocation(shaderProgramID, "vTexCoord"); //	: 2
+	int TextureLocation = glGetAttribLocation(shaderProgramID, "vTexCoord"); //	: 3
 	glEnableVertexAttribArray(PosLocation);
 	glEnableVertexAttribArray(ColorLocation);
 	glEnableVertexAttribArray(NormalLocation);
